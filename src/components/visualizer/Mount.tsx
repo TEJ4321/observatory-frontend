@@ -173,11 +173,11 @@ export const Mount = ({
         
         
         
-        <axesHelper args={[0.25]} /> {/* Axis for the tilted mount base */}
+        {/* <axesHelper args={[0.25]} /> Axis for the tilted mount base */}
         
         {/* RA Axis Housing (rotates for Hour Angle) */}
         <group ref={raGroupRef}>
-          <axesHelper args={[0.25]} /> {/* Axis for RA rotation */}
+          {/* <axesHelper args={[0.25]} /> Axis for RA rotation */}
 
 
           {/* This group flips for Pier Side */}
@@ -197,7 +197,8 @@ export const Mount = ({
 
             {/* Dec Axis Assembly. It's a child of the pier-side group. */}
             <group position={[0, raAxis.length / 2, 0]}>
-              <axesHelper args={[0.5]} /> {/* Axis for Pier Side flip */}
+              {/* Axis for Pier Side flip */}
+              <axesHelper args={[1]} />
               
               {/* Dec Axis Cylinder on mount */}
               <Cylinder
@@ -220,7 +221,7 @@ export const Mount = ({
               
               {/* Counterweight Shaft & Weights */}
               <group position={[0, 0, 0]}>
-                <axesHelper args={[0.5]} />
+                {/* <axesHelper args={[0.5]} /> */}
                 <Cylinder
                   args={[cw.shaftRadius, cw.shaftRadius, cw.shaftLength, 8]}
                   position={[-cw.shaftLength / 2, 0, 0]}
@@ -274,13 +275,14 @@ export const Mount = ({
               </group>
 
 
-
-
               {/* This group rotates for Declination */}
-              <group ref={decGroupRef}>
+              <group ref={decGroupRef} position={[decAxis.length, 0, 0]}>
+                <axesHelper args={[4]} />
+                
                 {/* Telescope Tube */}
-                <group position={[decAxis.length, -tube.pivotPos, 0]}>
-                  <axesHelper args={[4]} /> {/* Axis for Declination rotation */}
+                <group rotation={[Math.PI/2, 0, 0]} position={[0, 0, -tube.pivotPos * tube.length]}>
+                  {/* Axis for Declination rotation */}
+                  {/* <axesHelper args={[4]} />  */}
                   <Cylinder
                     args={[tube.radius, tube.radius, tube.length, 32]}
                     position={[0, tube.length / 2, 0]}

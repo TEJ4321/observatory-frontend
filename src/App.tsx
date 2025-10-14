@@ -185,7 +185,7 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   counterweightFirstPos: 0.4, // in meters
   counterweightThickness: 0.05, // in meters
   apiBaseUrl: "/api", // Use relative path to leverage Vite's proxy
-  pollingInterval: 2000,
+  pollingInterval: 10000,
   useWebSocket: false,
   telescopeCameraUrl:
     "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=800&q=80",

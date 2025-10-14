@@ -172,12 +172,12 @@ export function MountVisualizer3D({
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
             />
-            <Stars
+            {/* <Stars
               radius={domeRadius * 2}
               depth={50}
               count={5000}
               factor={10}
-            />
+            /> */}
             <Floor size={domeRadius * 2.5} />
             {/* {shutterState !== "open" && (
               <Dome
