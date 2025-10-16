@@ -151,23 +151,124 @@ const MountBase = ({
 }
 
 
-// MOUNT POLAR AXIS ======================================================
+// MOUNT POLAR (RA) AXIS COMPONENTS ======================================
 
 interface MountPolarAxisProps {
-  length: number;
-  diameter: number;
-  color?: string;
-  axialPosition: number;
+  lengthHolderSide: number;
+  diameterHolderSide: number;
+  colorHolderSide?: string;
+  positionHolderSide: number;
+  lengthMotorSideFull: number;
+  lengthMotorSideThick: number;
+  diameterMotorSide: number;
+  colorMotorSide?: string;
 }
 
 const MountPolarAxis = ({
-  length,
-  diameter,
-  color,
-  axialPosition,
+  lengthHolderSide = 0.18,
+  diameterHolderSide = 0.12,
+  colorHolderSide = "#5e5e5eff",
+  positionHolderSide = 0.05,
+  lengthMotorSideFull = 0.17,
+  colorMotorSide = "#5e5e5eff",
+  lengthMotorSideThick = 0.08,
+  diameterMotorSide = 0.12,
 }: MountPolarAxisProps) => {
+  return (
+    // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE HOLDER
+    // (THIS IS WHERE THE MOUNT BASE ASSEMBLY MEETS THE POLAR (RA) AXIS)
+    <group>
+      
+      <group position={[0, positionHolderSide, 0]}> 
+        {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT BORDER BETWEEN THE HOLDER SIDE AND THE MOTOR SIDE */}
 
+        <axesHelper args={[1]} />
+        {/* Holder Side Tube */}
+        <Cylinder
+          args={[diameterHolderSide / 2, diameterHolderSide / 2, lengthHolderSide, 32]}
+          position={[0, -lengthHolderSide / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={colorHolderSide || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+
+        {/* Motor Side Tube */}
+        <Cylinder
+          args={[diameterMotorSide / 2, diameterMotorSide / 2, lengthMotorSideThick, 32]}
+          position={[0, lengthMotorSideThick / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={colorMotorSide || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+
+        {/* Cone on motor side (Connection point to the dec axis) */}
+        <Cylinder
+          args={[diameterMotorSide / 2, 0.055, lengthMotorSideFull - lengthMotorSideThick, 32]}
+          position={[0, (lengthMotorSideFull - lengthMotorSideThick) / 2 + lengthMotorSideThick, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={colorMotorSide || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+          
+      </group>
+    </group>
+  )
 }
+
+
+// DECLINATION AXIS ======================================================
+
+interface DeclinationAxisProps {
+  lengthMain: number;
+  diameterMain: number;
+  colorMain?: string;
+  positionMain: number;
+  lengthMotor: number;
+  diameterMotor: number;
+  colorMotor?: string;
+}
+
+const DeclinationAxis = ({
+  lengthMain = 0.28,
+  diameterMain = 0.11,
+  colorMain = "#5e5e5eff",
+  positionMain = 0.1,
+  lengthMotor = 0.08,
+  diameterMotor = 0.18,
+  colorMotor = "#5e5e5eff",
+}: DeclinationAxisProps) => {
+  return (
+    // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE DEC
+    // (THIS IS WHERE THE DEC AXIS MEETS THE POLAR (RA) AXIS)
+    <group>
+      
+      <group position={[0, positionMain, 0]}> 
+        {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT BORDER BETWEEN THE MAIN SIDE AND THE MOTOR SIDE */}
+
+        <axesHelper args={[1]} />
+        {/* Main Side */}
+        <Cylinder
+          args={[diameterMain / 2, diameterMain / 2, lengthMain, 32]}
+          position={[0, -lengthMain / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={colorMain || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+
+        {/* Motor Side */}
+        <Cylinder
+          args={[diameterMotor / 2, diameterMotor / 2, lengthMotor, 32]}
+          position={[0, lengthMotor / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={colorMotor || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+        
+      </group>
+    </group>
+  )
+}
+
 
 // COUNTERWEIGHT =========================================================
 
@@ -189,13 +290,17 @@ interface CounterWeightProps {
 }
 
 const Counterweight = ({
-  shaftDiameter,
-  shaftLength,
-  shaftColor,
-  endCapDiameter,
-  endCapThickness,
-  endCapColor,
-  weights,
+  shaftDiameter = 0.04,
+  shaftLength = 0.4,
+  shaftColor = "#a0a6afff",
+  endCapDiameter = 0.05,
+  endCapThickness = 0.015,
+  endCapColor = "#292929ff",
+  weights = [
+    { offset: 0.05, diameter: 0.18, thickness: 0.06, color: "#b4b4b4ff" },
+    { offset: 0.03, diameter: 0.18, thickness: 0.06, color: "#b4b4b4ff" },
+    { offset: 0.07, diameter: 0.18, thickness: 0.06, color: "#b4b4b4ff" },
+  ],
 }: CounterWeightProps) => {
   // This running offset will track the position for the next weight.
   // We start at the base of the shaft.
@@ -220,7 +325,7 @@ const Counterweight = ({
         // Add the gap from the weight's offset property
         currentPosition += weight.offset;
         // Calculate the center position for this weight cylinder
-        const positionY = -(currentPosition + weight.thickness / 2);
+        const positionY = currentPosition + (weight.thickness / 2);
         // Update the running position for the next weight
         currentPosition += weight.thickness;
 
@@ -268,18 +373,18 @@ interface TelescopeTubeProps {
 }
 
 const TelescopeTube = ({
-  length,
-  diameter,
-  pivotPos,
-  color,
-  sensorAreaLength,
-  sensorAreaDiameter,
-  sensorAreaColor,
-  secondaryTubeLength,
-  secondaryTubeDiameter,
-  secondaryTubeColor,
-  secondaryTubeOffsetRadial,
-  secondaryTubeOffsetAxial,
+  length = 0.74,
+  diameter = 0.35,
+  pivotPos = 0.24,
+  color = "#df681aff",
+  sensorAreaLength = 0.17,
+  sensorAreaDiameter = 0.1,
+  sensorAreaColor = "#990a0aff",
+  secondaryTubeLength = 0.48,
+  secondaryTubeDiameter = 0.1,
+  secondaryTubeColor = "#1588d4ff",
+  secondaryTubeOffsetRadial = 0.12,
+  secondaryTubeOffsetAxial = 0,
 }: TelescopeTubeProps) => {
   return (
     // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE TELESCOPE
