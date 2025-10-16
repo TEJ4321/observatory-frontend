@@ -21,27 +21,54 @@ export interface ObservatorySettings {
   domeCenterZ: number;
 
   // Mount Configuration
+  // Pier
   pierHeight: number;
-  pierRadius: number;
-  mountHeight: number;
-  mountOffsetX: number;
-  mountOffsetZ: number;
-  raAxisLength: number;
-  raAxisRadius: number;
-  decAxisLength: number;
-  decAxisRadius: number;
+  pierDiameter: number;
+  pierElevatorHeight: number;
+  pierElevatorTopDiameter: number;
+  pierElevatorBottomDiameter: number;
 
-  // Telescope Configuration
+  // Mount Base
+  mountBaseDiskThickness: number;
+  mountBaseDiskDiameter: number;
+  mountBaseHolderHeight: number;
+  mountBaseHolderThickness: number;
+  mountBasePolarAxisHeight: number;
+  mountBasePolarAxisBoltDiameter: number;
+  mountBasePolarAxisBoltThickness: number;
+
+  // Mount Polar Axis (RA)
+  polarAxisLengthHolderSide: number;
+  polarAxisDiameterHolderSide: number;
+  polarAxisPositionHolderSide: number;
+  polarAxisLengthMotorSideFull: number;
+  polarAxisLengthMotorSideThick: number;
+  polarAxisDiameterMotorSide: number;
+
+  // Declination Axis
+  decAxisLengthMain: number;
+  decAxisDiameterMain: number;
+  decAxisPositionMain: number;
+  decAxisLengthMotor: number;
+  decAxisDiameterMotor: number;
+
+  // Counterweight
+  cwShaftDiameter: number;
+  cwShaftLength: number;
+  cwEndCapDiameter: number;
+  cwEndCapThickness: number;
+  // Note: cwWeights is complex and not editable in this panel for now.
+
+  // Telescope Tube
   tubeLength: number;
-  tubeRadius: number;
-  tubePosition: number;
-  counterweightShaftLength: number;
-  counterweightShaftRadius: number;
-  counterweightAmount: number;
-  counterweightRadius: number;
-  counterweightThickness: number;
-  counterweightGap: number;
-  counterweightFirstPos: number;
+  tubeDiameter: number;
+  tubePivotPos: number;
+  tubeSensorAreaLength: number;
+  tubeSensorAreaDiameter: number;
+  tubeSecondaryTubeLength: number;
+  tubeSecondaryTubeDiameter: number;
+  tubeSecondaryTubeOffsetRadial: number;
+  tubeSecondaryTubeOffsetAxial: number;
 
   // API Configuration
   apiBaseUrl: string;
@@ -221,130 +248,90 @@ export function SettingsPanel({ open, onOpenChange, settings, onSettingsChange }
 
             {/* Mount & Telescope Tab */}
             <TabsContent value="mount" className="space-y-6 mt-4">
+              {/* Pier Section */}
               <div className="space-y-4">
                 <h4 className="flex items-center gap-2 opacity-90">
-                  <Telescope className="w-4 h-4" />
-                  Mount Configuration
+                  <Mountain className="w-4 h-4" />
+                  Pier Configuration
                 </h4>
-                
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="pierHeight">Pier Height (units)</Label>
-                    <Input
-                      id="pierHeight"
-                      type="number"
-                      step="1"
-                      value={settings.pierHeight}
-                      onChange={(e) => handleChange('pierHeight', parseFloat(e.target.value))}
-                      className="glass"
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputWithLabel id="pierHeight" label="Pier Height" value={settings.pierHeight} onChange={handleChange} />
+                  <InputWithLabel id="pierDiameter" label="Pier Diameter" value={settings.pierDiameter} onChange={handleChange} />
+                  <InputWithLabel id="pierElevatorHeight" label="Elevator Height" value={settings.pierElevatorHeight} onChange={handleChange} />
+                  <InputWithLabel id="pierElevatorTopDiameter" label="Elevator Top Dia." value={settings.pierElevatorTopDiameter} onChange={handleChange} />
+                  <InputWithLabel id="pierElevatorBottomDiameter" label="Elevator Bottom Dia." value={settings.pierElevatorBottomDiameter} onChange={handleChange} />
+                </div>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="pierRadius">Pier Radius (units)</Label>
-                    <Input
-                      id="pierRadius"
-                      type="number"
-                      step="0.1"
-                      value={settings.pierRadius}
-                      onChange={(e) => handleChange('pierRadius', parseFloat(e.target.value))}
-                      className="glass"
-                    />
-                  </div>
+              <Separator />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="mountOffsetX">Mount Offset X</Label>
-                      <Input
-                        id="mountOffsetX"
-                        type="number"
-                        step="1"
-                        value={settings.mountOffsetX}
-                        onChange={(e) => handleChange('mountOffsetX', parseFloat(e.target.value))}
-                        className="glass"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="mountOffsetZ">Mount Offset Z</Label>
-                      <Input
-                        id="mountOffsetZ"
-                        type="number"
-                        step="1"
-                        value={settings.mountOffsetZ}
-                        onChange={(e) => handleChange('mountOffsetZ', parseFloat(e.target.value))}
-                        className="glass"
-                      />
-                    </div>
-                  </div>
+              {/* Mount Base Section */}
+              <div className="space-y-4">
+                <h4 className="opacity-90">Mount Base</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputWithLabel id="mountBaseDiskThickness" label="Disk Thickness" value={settings.mountBaseDiskThickness} onChange={handleChange} />
+                  <InputWithLabel id="mountBaseDiskDiameter" label="Disk Diameter" value={settings.mountBaseDiskDiameter} onChange={handleChange} />
+                  <InputWithLabel id="mountBaseHolderHeight" label="Holder Height" value={settings.mountBaseHolderHeight} onChange={handleChange} />
+                  <InputWithLabel id="mountBaseHolderThickness" label="Holder Thickness" value={settings.mountBaseHolderThickness} onChange={handleChange} />
+                  <InputWithLabel id="mountBasePolarAxisHeight" label="Polar Axis Height" value={settings.mountBasePolarAxisHeight} onChange={handleChange} />
+                  <InputWithLabel id="mountBasePolarAxisBoltDiameter" label="Bolt Diameter" value={settings.mountBasePolarAxisBoltDiameter} onChange={handleChange} />
+                  <InputWithLabel id="mountBasePolarAxisBoltThickness" label="Bolt Thickness" value={settings.mountBasePolarAxisBoltThickness} onChange={handleChange} />
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="raAxisLength">RA Axis Length</Label>
-                      <Input
-                        id="raAxisLength"
-                        type="number"
-                        step="1"
-                        value={settings.raAxisLength}
-                        onChange={(e) => handleChange('raAxisLength', parseFloat(e.target.value))}
-                        className="glass"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="decAxisLength">Dec Axis Length</Label>
-                      <Input
-                        id="decAxisLength"
-                        type="number"
-                        step="1"
-                        value={settings.decAxisLength}
-                        onChange={(e) => handleChange('decAxisLength', parseFloat(e.target.value))}
-                        className="glass"
-                      />
-                    </div>
-                  </div>
+              <Separator />
+
+              {/* Polar Axis Section */}
+              <div className="space-y-4">
+                <h4 className="opacity-90">Polar (RA) Axis</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputWithLabel id="polarAxisLengthHolderSide" label="Holder Side Length" value={settings.polarAxisLengthHolderSide} onChange={handleChange} />
+                  <InputWithLabel id="polarAxisDiameterHolderSide" label="Holder Side Dia." value={settings.polarAxisDiameterHolderSide} onChange={handleChange} />
+                  <InputWithLabel id="polarAxisPositionHolderSide" label="Holder Side Pos" value={settings.polarAxisPositionHolderSide} onChange={handleChange} />
+                  <InputWithLabel id="polarAxisLengthMotorSideFull" label="Motor Side Full Len" value={settings.polarAxisLengthMotorSideFull} onChange={handleChange} />
+                  <InputWithLabel id="polarAxisLengthMotorSideThick" label="Motor Side Thick Len" value={settings.polarAxisLengthMotorSideThick} onChange={handleChange} />
+                  <InputWithLabel id="polarAxisDiameterMotorSide" label="Motor Side Dia." value={settings.polarAxisDiameterMotorSide} onChange={handleChange} />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Declination Axis Section */}
+              <div className="space-y-4">
+                <h4 className="opacity-90">Declination (DEC) Axis</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <InputWithLabel id="decAxisLengthMain" label="Main Length" value={settings.decAxisLengthMain} onChange={handleChange} />
+                  <InputWithLabel id="decAxisDiameterMain" label="Main Diameter" value={settings.decAxisDiameterMain} onChange={handleChange} />
+                  <InputWithLabel id="decAxisPositionMain" label="Main Position" value={settings.decAxisPositionMain} onChange={handleChange} />
+                  <InputWithLabel id="decAxisLengthMotor" label="Motor Length" value={settings.decAxisLengthMotor} onChange={handleChange} />
+                  <InputWithLabel id="decAxisDiameterMotor" label="Motor Diameter" value={settings.decAxisDiameterMotor} onChange={handleChange} />
                 </div>
               </div>
 
               <Separator />
 
               <div className="space-y-4">
-                <h4 className="opacity-90">Telescope Configuration</h4>
-                
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="tubeLength">Tube Length (units)</Label>
-                    <Input
-                      id="tubeLength"
-                      type="number"
-                      step="1"
-                      value={settings.tubeLength}
-                      onChange={(e) => handleChange('tubeLength', parseFloat(e.target.value))}
-                      className="glass"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tubeRadius">Tube Radius (units)</Label>
-                    <Input
-                      id="tubeRadius"
-                      type="number"
-                      step="0.1"
-                      value={settings.tubeRadius}
-                      onChange={(e) => handleChange('tubeRadius', parseFloat(e.target.value))}
-                      className="glass"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="counterweightShaftLength">Counterweight Shaft Length</Label>
-                    <Input
-                      id="counterweightShaftLength"
-                      type="number"
-                      step="1"
-                      value={settings.counterweightShaftLength}
-                      onChange={(e) => handleChange('counterweightShaftLength', parseFloat(e.target.value))}
-                      className="glass"
-                    />
-                  </div>
+                <h4 className="flex items-center gap-2 opacity-90">
+                  <Telescope className="w-4 h-4" />
+                  Telescope & Counterweight
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Telescope */}
+                  <InputWithLabel id="tubeLength" label="Tube Length" value={settings.tubeLength} onChange={handleChange} />
+                  <InputWithLabel id="tubeDiameter" label="Tube Diameter" value={settings.tubeDiameter} onChange={handleChange} />
+                  <InputWithLabel id="tubePivotPos" label="Tube Pivot Pos" value={settings.tubePivotPos} onChange={handleChange} />
+                  <InputWithLabel id="tubeSensorAreaLength" label="Sensor Area Length" value={settings.tubeSensorAreaLength} onChange={handleChange} />
+                  <InputWithLabel id="tubeSensorAreaDiameter" label="Sensor Area Dia." value={settings.tubeSensorAreaDiameter} onChange={handleChange} />
+                  <InputWithLabel id="tubeSecondaryTubeLength" label="Secondary Tube Len" value={settings.tubeSecondaryTubeLength} onChange={handleChange} />
+                  <InputWithLabel id="tubeSecondaryTubeDiameter" label="Secondary Tube Dia." value={-settings.tubeSecondaryTubeDiameter} onChange={handleChange} />
+                  <InputWithLabel id="tubeSecondaryTubeOffsetRadial" label="Secondary Radial Offset" value={settings.tubeSecondaryTubeOffsetRadial} onChange={handleChange} />
+                  <InputWithLabel id="tubeSecondaryTubeOffsetAxial" label="Secondary Axial Offset" value={settings.tubeSecondaryTubeOffsetAxial} onChange={handleChange} />
+                  
+                  {/* Counterweight */}
+                  <InputWithLabel id="cwShaftLength" label="CW Shaft Length" value={settings.cwShaftLength} onChange={handleChange} />
+                  <InputWithLabel id="cwShaftDiameter" label="CW Shaft Diameter" value={settings.cwShaftDiameter} onChange={handleChange} />
+                  <InputWithLabel id="cwEndCapDiameter" label="CW End Cap Dia." value={settings.cwEndCapDiameter} onChange={handleChange} />
+                  <InputWithLabel id="cwEndCapThickness" label="CW End Cap Thick." value={settings.cwEndCapThickness} onChange={handleChange} />
                 </div>
               </div>
             </TabsContent>
@@ -464,3 +451,24 @@ export function SettingsPanel({ open, onOpenChange, settings, onSettingsChange }
     </Sheet>
   );
 }
+
+interface InputWithLabelProps {
+  id: keyof ObservatorySettings;
+  label: string;
+  value: string | number;
+  onChange: (key: keyof ObservatorySettings, value: string | number | boolean) => void;
+}
+
+const InputWithLabel = ({ id, label, value, onChange }: InputWithLabelProps) => (
+  <div className="space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Input
+      id={id}
+      type="number"
+      step="0.01"
+      value={value}
+      onChange={(e) => onChange(id, parseFloat(e.target.value))}
+      className="glass"
+    />
+  </div>
+);

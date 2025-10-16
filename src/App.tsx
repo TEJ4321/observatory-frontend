@@ -163,27 +163,46 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   siteName: "UNSW Observatory",
   domeRadius: 2.5, // in meters
   domeCenterX: 0,
-  domeCenterY: 0,
   domeCenterZ: 0,
-  pierHeight: 1.5, // in meters
-  pierRadius: 0.41, // in meters
-  mountHeight: 0.2, // in meters, height of the actual RA axis mount point
-  mountOffsetX: 0.14*Math.sin(20*Math.PI/180), // in meters, +ve east
-  mountOffsetZ: 0.14*Math.cos(20*Math.PI/180), // in meters, +ve south
-  raAxisLength: 0.1, // in meters
-  raAxisRadius: 0.05, // in meters
-  decAxisLength: 0.42, // in meters
-  decAxisRadius: 0.05, // in meters
-  tubeLength: 1.5, // in meters
-  tubeRadius: 0.2, // in meters
-  tubePosition: 0.4, // decimal between 0 and 1 indicating how far forward the pivot point is
-  counterweightShaftLength: 0.6, // in meters
-  counterweightShaftRadius: 0.02, // in meters
-  counterweightAmount: 3,
-  counterweightGap: 0.04, // in meters
-  counterweightRadius: 0.06, // in meters
-  counterweightFirstPos: 0.4, // in meters
-  counterweightThickness: 0.05, // in meters
+  domeCenterY: 0, // Not used currently
+  // Mount Configuration Defaults from MountVisualizer3D
+  pierHeight: 1.2,
+  pierDiameter: 0.82,
+  pierElevatorHeight: 0.24,
+  pierElevatorTopDiameter: 0.22,
+  pierElevatorBottomDiameter: 0.33,
+  mountBaseDiskThickness: 0.08,
+  mountBaseDiskDiameter: 0.22,
+  mountBaseHolderHeight: 0.23,
+  mountBaseHolderThickness: 0.04,
+  mountBasePolarAxisHeight: 0.17,
+  mountBasePolarAxisBoltDiameter: 0.03,
+  mountBasePolarAxisBoltThickness: 0.03,
+  polarAxisLengthHolderSide: 0.18,
+  polarAxisDiameterHolderSide: 0.12,
+  polarAxisPositionHolderSide: 0.05,
+  polarAxisLengthMotorSideFull: 0.17,
+  polarAxisLengthMotorSideThick: 0.08,
+  polarAxisDiameterMotorSide: 0.12,
+  decAxisLengthMain: 0.28,
+  decAxisDiameterMain: 0.11,
+  decAxisPositionMain: 0.1,
+  decAxisLengthMotor: 0.08,
+  decAxisDiameterMotor: 0.18,
+  cwShaftDiameter: 0.04,
+  cwShaftLength: 0.4,
+  cwEndCapDiameter: 0.05,
+  cwEndCapThickness: 0.015,
+  tubeLength: 0.74,
+  tubeDiameter: 0.35,
+  tubePivotPos: 0.24,
+  tubeSensorAreaLength: 0.17,
+  tubeSensorAreaDiameter: 0.1,
+  tubeSecondaryTubeLength: 0.48,
+  tubeSecondaryTubeDiameter: 0.1,
+  tubeSecondaryTubeOffsetRadial: 0.12,
+  tubeSecondaryTubeOffsetAxial: 0,
+  // API and Camera
   apiBaseUrl: "/api", // Use relative path to leverage Vite's proxy
   pollingInterval: 10000,
   useWebSocket: false,
@@ -427,27 +446,7 @@ export default function App() {
             domeAzimuth={data.dome.azimuth}
             siderealTime={data.time.siderealTime}
             shutterState={data.dome.shutterState}
-            domeRadius={settings.domeRadius} // in meters
-            latitude={settings.latitude}
-            pierHeight={settings.pierHeight} // in meters
-            pierRadius={settings.pierRadius} // in meters
-            mountHeight={settings.mountHeight} // in meters} height of the actual RA axis mount point
-            mountOffsetX={settings.mountOffsetX} // in meters} +ve east
-            mountOffsetZ={settings.mountOffsetZ} // in meters} +ve south
-            raAxisLength={settings.raAxisLength} // in meters
-            raAxisRadius={settings.raAxisRadius} // in meters
-            decAxisLength={settings.decAxisLength} // in meters
-            decAxisRadius={settings.decAxisRadius} // in meters
-            tubeLength={settings.tubeLength} // in meters
-            tubeRadius={settings.tubeRadius} // in meters
-            tubePosition={settings.tubePosition} // decimal between 0 and 1 indicating how far forward the pivot point is
-            counterweightShaftLength={settings.counterweightShaftLength} // in meters
-            counterweightShaftRadius={settings.counterweightShaftRadius} // in meters
-            counterweightAmount={settings.counterweightAmount}
-            counterweightGap={settings.counterweightGap} // in meters
-            counterweightRadius={settings.counterweightRadius} // in meters
-            counterweightFirstPos={settings.counterweightFirstPos} // in meters
-            counterweightThickness={settings.counterweightThickness} // in meters
+            {...settings}
           />
 
           <DomeControl {...data.dome} />

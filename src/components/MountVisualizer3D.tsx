@@ -22,27 +22,59 @@ interface MountVisualizer3DProps {
   domeRadius: number;
 
   // Mount Configuration
-  pierHeight: number;
-  pierRadius: number;
-  mountHeight: number;
-  mountOffsetX: number;
-  mountOffsetZ: number;
-  raAxisLength: number;
-  raAxisRadius: number;
-  decAxisLength: number;
-  decAxisRadius: number;
+  // Pier
+  pierHeight?: number;
+  pierDiameter?: number;
+  pierElevatorHeight?: number;
+  pierElevatorTopDiameter?: number;
+  pierElevatorBottomDiameter?: number;
 
-  // Telescope Configuration
-  tubeLength: number;
-  tubeRadius: number;
-  tubePosition: number;
-  counterweightShaftLength: number;
-  counterweightShaftRadius: number;
-  counterweightAmount: number;
-  counterweightRadius: number;
-  counterweightThickness: number;
-  counterweightGap: number;
-  counterweightFirstPos: number;
+  // Mount Base
+  mountBaseDiskThickness?: number;
+  mountBaseDiskDiameter?: number;
+  mountBaseHolderHeight?: number;
+  mountBaseHolderThickness?: number;
+  mountBasePolarAxisHeight?: number;
+  mountBasePolarAxisBoltDiameter?: number;
+  mountBasePolarAxisBoltThickness?: number;
+
+  // Mount Polar Axis (RA)
+  polarAxisLengthHolderSide?: number;
+  polarAxisDiameterHolderSide?: number;
+  polarAxisPositionHolderSide?: number;
+  polarAxisLengthMotorSideFull?: number;
+  polarAxisLengthMotorSideThick?: number;
+  polarAxisDiameterMotorSide?: number;
+
+  // Declination Axis
+  decAxisLengthMain?: number;
+  decAxisDiameterMain?: number;
+  decAxisPositionMain?: number;
+  decAxisLengthMotor?: number;
+  decAxisDiameterMotor?: number;
+
+  // Counterweight
+  cwShaftDiameter?: number;
+  cwShaftLength?: number;
+  cwEndCapDiameter?: number;
+  cwEndCapThickness?: number;
+  cwWeights?: {
+    offset: number;
+    diameter: number;
+    thickness: number;
+  }[];
+
+  // Telescope Tube
+  tubeLength?: number;
+  tubeDiameter?: number;
+  tubePivotPos?: number;
+  tubeSensorAreaLength?: number;
+  tubeSensorAreaDiameter?: number;
+  tubeSecondaryTubeLength?: number;
+  tubeSecondaryTubeDiameter?: number;
+  tubeSecondaryTubeOffsetRadial?: number;
+  tubeSecondaryTubeOffsetAxial?: number;
+
 }
 
 export function MountVisualizer3D({
@@ -54,26 +86,48 @@ export function MountVisualizer3D({
   shutterState,
   latitude = -33.85,
   domeRadius = 2.5,
-
-  pierHeight = 1.5, // in meters
-  pierRadius = 0.41, // in meters
-  mountHeight = 0.2, // in meters, height of the actual RA axis mount point
-  mountOffsetX = 0.14*Math.sin(20*Math.PI/180), // in meters, +ve east
-  mountOffsetZ = 0.14*Math.cos(20*Math.PI/180), // in meters, +ve south
-  raAxisLength = 0.1, // in meters
-  raAxisRadius = 0.05, // in meters
-  decAxisLength = 0.42, // in meters
-  decAxisRadius = 0.05, // in meters
-  tubeLength = 1.5, // in meters
-  tubeRadius = 0.2, // in meters
-  tubePosition = 0.4, // decimal between 0 and 1 indicating how far forward the pivot point is
-  counterweightShaftLength = 0.9, // in meters
-  counterweightShaftRadius = 0.02, // in meters
-  counterweightAmount = 3,
-  counterweightGap = 0.04, // in meters
-  counterweightRadius = 0.06, // in meters
-  counterweightFirstPos = 0.18, // in meters
-  counterweightThickness = 0.05, // in meters
+  // Mount Configuration Defaults
+  pierHeight = 1.2,
+  pierDiameter = 0.82,
+  pierElevatorHeight = 0.24,
+  pierElevatorTopDiameter = 0.22,
+  pierElevatorBottomDiameter = 0.33,
+  mountBaseDiskThickness = 0.08,
+  mountBaseDiskDiameter = 0.22,
+  mountBaseHolderHeight = 0.23,
+  mountBaseHolderThickness = 0.04,
+  mountBasePolarAxisHeight = 0.17,
+  mountBasePolarAxisBoltDiameter = 0.03,
+  mountBasePolarAxisBoltThickness = 0.03,
+  polarAxisLengthHolderSide = 0.18,
+  polarAxisDiameterHolderSide = 0.12,
+  polarAxisPositionHolderSide = 0.05,
+  polarAxisLengthMotorSideFull = 0.17,
+  polarAxisLengthMotorSideThick = 0.08,
+  polarAxisDiameterMotorSide = 0.12,
+  decAxisLengthMain = 0.28,
+  decAxisDiameterMain = 0.11,
+  decAxisPositionMain = 0.1,
+  decAxisLengthMotor = 0.08,
+  decAxisDiameterMotor = 0.18,
+  cwShaftDiameter = 0.04,
+  cwShaftLength = 0.4,
+  cwEndCapDiameter = 0.05,
+  cwEndCapThickness = 0.015,
+  cwWeights = [
+    { offset: 0.05, diameter: 0.18, thickness: 0.06 },
+    { offset: 0.03, diameter: 0.18, thickness: 0.06 },
+    { offset: 0.07, diameter: 0.18, thickness: 0.06 },
+  ],
+  tubeLength = 0.74,
+  tubeDiameter = 0.35,
+  tubePivotPos = 0.24,
+  tubeSensorAreaLength = 0.17,
+  tubeSensorAreaDiameter = 0.1,
+  tubeSecondaryTubeLength = 0.48,
+  tubeSecondaryTubeDiameter = 0.1,
+  tubeSecondaryTubeOffsetRadial = 0.12,
+  tubeSecondaryTubeOffsetAxial = 0,
 
 }: MountVisualizer3DProps) {
   const controlsRef = useRef<any>(null);
@@ -82,6 +136,11 @@ export function MountVisualizer3D({
   useEffect(() => {
     controlsRef.current?.saveState();
   }, []);
+
+  const mountOffset = useMemo(() => ({
+    x: 0.14 * Math.sin(20 * Math.PI / 180),
+    z: -0.14 * Math.cos(20 * Math.PI / 180)
+  }), []);
 
   const resetView = () => {
     controlsRef.current?.reset();
@@ -192,22 +251,50 @@ export function MountVisualizer3D({
               pierSide={pierSide}
               siderealTime={siderealTime}
               latitude={latitude}
+              mountOffset={mountOffset}
+              // Pier
               pierHeight={pierHeight}
-              pierRadius={pierRadius}
-              mountHeight={mountHeight}
-              mountOffset={{ x: mountOffsetX, z: mountOffsetZ }}
-              raAxis={{ length: raAxisLength, radius: raAxisRadius }}
-              decAxis={{ length: decAxisLength, radius: decAxisRadius }}
-              tube={{ length: tubeLength, radius: tubeRadius, pivotPos: tubePosition}}
-              cw={{
-                shaftLength: counterweightShaftLength,
-                shaftRadius: counterweightShaftRadius,
-                amount: counterweightAmount,
-                gap: counterweightGap,
-                firstPos: counterweightFirstPos,
-                radius: counterweightRadius,
-                thickness: counterweightThickness,
-              }}
+              pierDiameter={pierDiameter}
+              pierElevatorHeight={pierElevatorHeight}
+              pierElevatorTopDiameter={pierElevatorTopDiameter}
+              pierElevatorBottomDiameter={pierElevatorBottomDiameter}
+              // Mount Base
+              mountBaseDiskThickness={mountBaseDiskThickness}
+              mountBaseDiskDiameter={mountBaseDiskDiameter}
+              mountBaseHolderHeight={mountBaseHolderHeight}
+              mountBaseHolderThickness={mountBaseHolderThickness}
+              mountBasePolarAxisHeight={mountBasePolarAxisHeight}
+              mountBasePolarAxisBoltDiameter={mountBasePolarAxisBoltDiameter}
+              mountBasePolarAxisBoltThickness={mountBasePolarAxisBoltThickness}
+              // Mount Polar Axis (RA)
+              polarAxisLengthHolderSide={polarAxisLengthHolderSide}
+              polarAxisDiameterHolderSide={polarAxisDiameterHolderSide}
+              polarAxisPositionHolderSide={polarAxisPositionHolderSide}
+              polarAxisLengthMotorSideFull={polarAxisLengthMotorSideFull}
+              polarAxisLengthMotorSideThick={polarAxisLengthMotorSideThick}
+              polarAxisDiameterMotorSide={polarAxisDiameterMotorSide}
+              // Declination Axis
+              decAxisLengthMain={decAxisLengthMain}
+              decAxisDiameterMain={decAxisDiameterMain}
+              decAxisPositionMain={decAxisPositionMain}
+              decAxisLengthMotor={decAxisLengthMotor}
+              decAxisDiameterMotor={decAxisDiameterMotor}
+              // Counterweight
+              cwShaftDiameter={cwShaftDiameter}
+              cwShaftLength={cwShaftLength}
+              cwEndCapDiameter={cwEndCapDiameter}
+              cwEndCapThickness={cwEndCapThickness}
+              cwWeights={cwWeights}
+              // Telescope Tube
+              tubeLength={tubeLength}
+              tubeDiameter={tubeDiameter}
+              tubePivotPos={tubePivotPos}
+              tubeSensorAreaLength={tubeSensorAreaLength}
+              tubeSensorAreaDiameter={tubeSensorAreaDiameter}
+              tubeSecondaryTubeLength={tubeSecondaryTubeLength}
+              tubeSecondaryTubeDiameter={tubeSecondaryTubeDiameter}
+              tubeSecondaryTubeOffsetRadial={tubeSecondaryTubeOffsetRadial}
+              tubeSecondaryTubeOffsetAxial={tubeSecondaryTubeOffsetAxial}
             />
             <OrbitControls
               ref={controlsRef}
@@ -219,19 +306,19 @@ export function MountVisualizer3D({
 
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm opacity-80">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#3b82f6]" />
-            <span className="text-sm">RA Axis</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#ef4444]" />
-            <span className="text-sm">Dec Axis</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#e5e7eb]" />
+            <div className="w-4 h-1 bg-[#df681a]" />
             <span className="text-sm">Telescope</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#f0f0f0]" />
+            <div className="w-4 h-1 bg-[#5e5e5e]" />
+            <span className="text-sm">Mount</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-1 bg-[#b4b4b4]" />
+            <span className="text-sm">Counterweight</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-1 bg-[#7d578d]" />
             <span className="text-sm">Dome Slit</span>
           </div>
         </div>

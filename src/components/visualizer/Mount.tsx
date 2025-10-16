@@ -128,7 +128,7 @@ const Pier = ({
       {/* Mount Elevator (sits on top of pier to elevate the mount from the pier) */}
       <Cylinder
         args={[elevatorTopDiameter / 2, elevatorBottomDiameter / 2, elevatorHeight, 32]}
-        position={[0, height + elevatorHeight / 2, 0]}
+        position={[mountOffset.x, height + elevatorHeight / 2, mountOffset.z]}
         castShadow
       >
         <meshStandardMaterial color={elevatorColor || "#272727ff"} metalness={0.2} roughness={0.2} />
@@ -657,7 +657,7 @@ export const Mount = ({
       />
 
       {/* Mount Base Group - positioned on top of the pier elevator */}
-      <group position={[0, pierHeight + pierElevatorHeight, 0]}>
+      <group position={[mountOffset.x, pierHeight + pierElevatorHeight, mountOffset.z]}>
         <MountBase
           baseDiskThickness={mountBaseDiskThickness}
           baseDiskDiameter={mountBaseDiskDiameter}
@@ -740,28 +740,21 @@ export const Mount = ({
                       />
                     </group>
 
-                  {/* Declination Axis Motor Rotation */}
-                  </group>
+                  </group> {/* Declination Axis Motor Rotation */}
 
-                {/* Declination Axis Centre*/}
-                </group>
+                </group> {/* Declination Axis Centre*/}
 
-              {/* Pier Side */}
-              </group>
+              </group> {/* Pier Side */}
 
-            {/* RA Hour Angle */}
-            </group>
+            </group> {/* RA Hour Angle */}
 
-          {/* Latitude */}
-          </group>
+          </group> {/* Latitude */}
 
-        {/* RA Axis Origin */}
-        </group>
+        </group> {/* RA Axis Origin */}
 
-      {/* Mount Base */}
-      </group>
+      </group> {/* Mount Base */}
 
     {/* Overall */}
-    </group>
+    </group> 
   );
 };
