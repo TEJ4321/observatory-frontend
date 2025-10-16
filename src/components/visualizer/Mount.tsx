@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Cylinder, Sphere } from "@react-three/drei";
+import { Cylinder, Sphere, Box } from "@react-three/drei";
 import * as THREE from "three";
 
 const hmsToHours = (hms: string): number => {
@@ -26,16 +26,312 @@ interface MountProps {
   raAxis: { length: number; radius: number };
   decAxis: { length: number; radius: number };
   tube: { length: number; radius: number; pivotPos: number };
-  cw: {
-    shaftLength: number;
-    shaftRadius: number;
-    amount: number;
-    gap: number;
-    firstPos: number;
-    radius: number;
-    thickness: number;
-  };
 }
+
+
+// PIER ==================================================================
+
+interface PierProps {
+  height: number;
+  diameter: number;
+  colorSide?: string;
+  colorTop?: string;
+  mountOffset: { x: number; z: number };
+
+  elevatorHeight: number;
+  elevatorTopDiameter: number;
+  elevatorBottomDiameter: number;
+  elevatorColor?: string;
+
+}
+
+const Pier = ({
+  height = 1.2,
+  diameter = 0.82,
+  colorSide = "#7d578dff",
+  mountOffset = { x: 0.14*Math.sin(20*Math.PI/180), z: -0.14*Math.cos(20*Math.PI/180) },
+  elevatorHeight = 0.24,
+  elevatorTopDiameter = 0.22,
+  elevatorBottomDiameter = 0.33,
+  elevatorColor = "#181818ff",
+}: PierProps) => {
+
+  return (
+    <group>
+      <axesHelper args={[1]} />
+      {/* Pier Base (sits on the observatory floor)*/}
+      <Cylinder
+        args={[diameter / 2, diameter / 2, height, 32]}
+        position={[0, height / 2, 0]}
+        castShadow
+      >
+        <meshStandardMaterial color={colorSide || "#666"} metalness={0.8} roughness={0.4} />
+      </Cylinder>
+
+      {/* Mount Elevator (sits on top of pier to elevate the mount from the pier) */}
+      <Cylinder
+        args={[elevatorTopDiameter / 2, elevatorBottomDiameter / 2, elevatorHeight, 32]}
+        position={[0, height + elevatorHeight / 2, 0]}
+        castShadow
+      >
+        <meshStandardMaterial color={elevatorColor || "#272727ff"} metalness={0.2} roughness={0.2} />
+      </Cylinder>
+
+    </group>
+  )
+
+}
+
+// MOUNT BASE ============================================================
+
+interface MountBaseProps {
+  baseDiskThickness: number;
+  baseDiskDiameter: number;
+  holderHeight: number;
+  holderThickness: number
+  polarAxisHeight: number;
+  polarAxisBoltDiameter: number;
+  polarAxisBoltThickness: number;
+  color?: string;
+  polarAxisBoltColor?: string;
+}
+
+const MountBase = ({
+  baseDiskThickness = 0.08,
+  baseDiskDiameter = 0.22,
+  holderHeight = 0.23,
+  holderThickness = 0.04,
+  polarAxisHeight = 0.17,
+  polarAxisBoltDiameter = 0.03,
+  polarAxisBoltThickness = 0.03,
+  color = "#5e5e5eff",
+  polarAxisBoltColor = "#d3d3d3ff",
+}: MountBaseProps) => {
+  return (
+    <group>
+      <axesHelper args={[1]} />
+      {/* Mount Base Cylinder (sits directly on the elevator on the pier)*/}
+      <Cylinder
+        args={[baseDiskDiameter / 2, baseDiskDiameter / 2, baseDiskThickness, 32]}
+        position={[0, baseDiskThickness / 2, 0]}
+        castShadow
+      >
+        <meshStandardMaterial color={color || "#3b82f6"} metalness={0.7} roughness={0.3} />
+      </Cylinder>
+
+      {/* Holder sides - this should be two rectangular prisms on either side of the polar axis hold it in place */}
+      <group>
+        <axesHelper args={[1]} />
+        <Box
+          args={[holderThickness, holderHeight, baseDiskDiameter / 2]}
+          position={[baseDiskDiameter / 2, holderHeight / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={color || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Box>
+        <Box
+          args={[holderThickness, holderHeight, baseDiskDiameter / 2]}
+          position={[-baseDiskDiameter / 2, holderHeight / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={color || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Box>
+        {/* Put a small cylinder at the location of the polar axis height */}
+        <Cylinder
+          args={[polarAxisBoltDiameter / 2, polarAxisBoltDiameter / 2, polarAxisBoltThickness * 2 + baseDiskDiameter, 32]}
+          position={[0, polarAxisHeight, 0]}
+          rotation={[0, 0, Math.PI / 2]}
+          castShadow
+        >
+          <meshStandardMaterial color={polarAxisBoltColor || "#3b82f6"} metalness={0.7} roughness={0.3} />
+        </Cylinder>
+      </group>
+    </group>
+  )
+}
+
+
+// MOUNT POLAR AXIS ======================================================
+
+interface MountPolarAxisProps {
+  length: number;
+  diameter: number;
+  color?: string;
+  axialPosition: number;
+}
+
+const MountPolarAxis = ({
+  length,
+  diameter,
+  color,
+  axialPosition,
+}: MountPolarAxisProps) => {
+
+}
+
+// COUNTERWEIGHT =========================================================
+
+interface WeightProps {
+  offset: number;
+  diameter: number;
+  thickness: number;
+  color?: string;
+}
+
+interface CounterWeightProps {
+  shaftDiameter: number;
+  shaftLength: number;
+  shaftColor?: string;
+  endCapDiameter: number;
+  endCapThickness: number;
+  endCapColor?: string;
+  weights: WeightProps[];
+}
+
+const Counterweight = ({
+  shaftDiameter,
+  shaftLength,
+  shaftColor,
+  endCapDiameter,
+  endCapThickness,
+  endCapColor,
+  weights,
+}: CounterWeightProps) => {
+  // This running offset will track the position for the next weight.
+  // We start at the base of the shaft.
+  let currentPosition = 0;
+
+  return (
+    <group>
+      {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT THE START OF THE COUNTERWEIGHT SHAFT */}
+
+      <axesHelper args={[1]} />
+      {/* Counterweight Shaft */}
+      <Cylinder
+        args={[shaftDiameter / 2, shaftDiameter / 2, shaftLength, 16]}
+        position={[0, shaftLength / 2, 0]}
+        castShadow
+      >
+        <meshStandardMaterial color={shaftColor || "#9ca3af"} metalness={1.0} roughness={0.1} />
+      </Cylinder>
+
+      {/* Map through the weights and place them on the shaft */}
+      {weights.map((weight, index) => {
+        // Add the gap from the weight's offset property
+        currentPosition += weight.offset;
+        // Calculate the center position for this weight cylinder
+        const positionY = -(currentPosition + weight.thickness / 2);
+        // Update the running position for the next weight
+        currentPosition += weight.thickness;
+
+        return (
+          <Cylinder
+            key={index}
+            args={[weight.diameter / 2, weight.diameter / 2, weight.thickness, 32]}
+            position={[0, positionY, 0]}
+            castShadow
+          >
+            <meshStandardMaterial color={weight.color || "#4b5563"} metalness={0.8} roughness={0.3} />
+          </Cylinder>
+        );
+      })}
+
+      {/* End Cap */}
+      <Cylinder
+        args={[endCapDiameter / 2, endCapDiameter / 2, endCapThickness, 8]}
+        position={[-(shaftLength + endCapThickness / 2), 0, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+        castShadow
+      >
+        <meshStandardMaterial color={endCapColor || "#292929ff"} metalness={0.2} roughness={0.2} />
+      </Cylinder>
+    </group>
+  );
+};
+
+
+// TELESCOPE TUBES =======================================================
+
+interface TelescopeTubeProps {
+  length: number;
+  diameter: number;
+  pivotPos: number;
+  color?: string;
+  sensorAreaLength: number;
+  sensorAreaDiameter: number;
+  sensorAreaColor?: string;
+  secondaryTubeLength: number;
+  secondaryTubeDiameter: number;
+  secondaryTubeColor?: string;
+  secondaryTubeOffsetRadial: number;
+  secondaryTubeOffsetAxial: number;
+}
+
+const TelescopeTube = ({
+  length,
+  diameter,
+  pivotPos,
+  color,
+  sensorAreaLength,
+  sensorAreaDiameter,
+  sensorAreaColor,
+  secondaryTubeLength,
+  secondaryTubeDiameter,
+  secondaryTubeColor,
+  secondaryTubeOffsetRadial,
+  secondaryTubeOffsetAxial,
+}: TelescopeTubeProps) => {
+  return (
+    // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE TELESCOPE
+    // (THIS IS WHERE THE TELESCOPE TUBE ASSEMBLY MEETS THE DECLINATION AXIS MOTOR)
+    <group>
+      
+      <group position={[0, -pivotPos, 0]}> 
+        {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT THE START OF THE TELESCOPE TUBE */}
+
+        <axesHelper args={[1]} />
+        {/* Telescope Tube */}
+        <Cylinder
+          args={[diameter / 2, diameter / 2, length, 32]}
+          position={[0, length / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={color || "#ff8229ff"} metalness={0.9} roughness={0.2} />
+        </Cylinder>
+
+        {/* Sensor Area */}
+        <Cylinder
+          args={[sensorAreaDiameter / 2, sensorAreaDiameter / 2, sensorAreaLength, 32]}
+          position={[0, -sensorAreaLength / 2, 0]}
+          castShadow
+        >
+          <meshStandardMaterial color={sensorAreaColor || "#292929ff"} metalness={0.2} roughness={0.2} />
+        </Cylinder>
+
+        {/* Secondary Tube */}
+        <Cylinder
+          args={[secondaryTubeDiameter / 2, secondaryTubeDiameter / 2, secondaryTubeLength, 32]}
+          position={[
+            (diameter + secondaryTubeDiameter) / 2 + secondaryTubeOffsetRadial,
+            secondaryTubeLength / 2 + secondaryTubeOffsetAxial,
+            0]}
+          castShadow
+        >
+          <meshStandardMaterial color={secondaryTubeColor || "#292929ff"} metalness={0.2} roughness={0.2} />
+        </Cylinder>
+      </group>
+    </group>
+    
+  )
+}
+        
+
+
+
+
+
+
+
 
 export const Mount = ({
   ra,
@@ -101,48 +397,7 @@ export const Mount = ({
   const decColor = "#ef4444";
   const tubeColor = "#ff8229ff";
   const cwColor = "#4b5563";
-
-  /*
-    Coordinate System and Rotation Hierarchy for the German Equatorial Mount:
-
-    1. World Frame (Observatory Floor):
-       - +X: East
-       - +Y: Up (Zenith)
-       - +Z: South
-       - This is a right-handed coordinate system.
-
-    2. Latitude Tilt Group (Mount Base):
-       - This group sits on top of the pier.
-       - It is rotated by `-latRad` around the World X-axis (East-West axis).
-       - This crucial rotation aligns the group's local Y-axis with the Earth's rotational axis,
-         making it the "Polar Axis". It points towards the Celestial Pole.
-       - Local Frame:
-         - +X: Still points East.
-         - +Y: Is now the Polar Axis (points towards the pole).
-         - +Z: Tilted up from the horizon, perpendicular to the Polar Axis.
-
-    3. RA (Hour Angle) Group (`raGroupRef`):
-       - This is a child of the Latitude Tilt group.
-       - It rotates around its local Y-axis (the Polar Axis).
-       - This rotation corresponds to the Hour Angle (HA) of the target.
-       - `rotation.y = haRad`
-
-    4. Pier Side Group (`pierSideRef`):
-       - This is a child of the RA group.
-       - It rotates by 180 degrees (PI radians) around its local Y-axis (the Polar Axis)
-         to perform a "meridian flip".
-       - `rotation.y = pierAngle` (0 for West, PI for East)
-
-    5. Declination Group (`decGroupRef`):
-       - This is a child of the Pier Side group.
-       - It rotates around its local X-axis. This axis is perpendicular to the Polar Axis
-         and represents the Declination (Dec) axis.
-       - `rotation.x = decRad`
-
-    The final pointing of the telescope is a result of this chain of transformations:
-    World -> Latitude Tilt -> RA Rotation -> Pier Flip -> Dec Rotation -> Telescope Offset
-  */
-
+  
   return (
     <group position={[mountOffset.x, 0, mountOffset.z]}>
       
@@ -221,57 +476,19 @@ export const Mount = ({
               
               {/* Counterweight Shaft & Weights */}
               <group position={[0, 0, 0]}>
-                {/* <axesHelper args={[0.5]} /> */}
-                <Cylinder
-                  args={[cw.shaftRadius, cw.shaftRadius, cw.shaftLength, 8]}
-                  position={[-cw.shaftLength / 2, 0, 0]}
-                  rotation={[0, 0, Math.PI / 2]}
-                  castShadow
-                >
-                  <meshStandardMaterial
-                    color="#9ca3af"
-                    metalness={1.0}
-                    roughness={0.1}
-                  />
-                </Cylinder>
-                
-                
-                <Cylinder
-                  args={[cw.radius, cw.radius, cw.thickness, 16]}
-                  position={[-cw.firstPos, 0, 0]}
-                  rotation={[0, 0, Math.PI / 2]}
-                  castShadow
-                >
-                  <meshStandardMaterial
-                    color={cwColor}
-                    metalness={0.9}
-                    roughness={0.3}
-                  />
-                </Cylinder>
-                <Cylinder
-                  args={[cw.radius, cw.radius, cw.thickness, 16]}
-                  position={[-cw.firstPos - (cw.gap + cw.thickness), 0, 0]}
-                  rotation={[0, 0, Math.PI / 2]}
-                  castShadow
-                >
-                  <meshStandardMaterial
-                    color={cwColor}
-                    metalness={0.9}
-                    roughness={0.3}
-                  />
-                </Cylinder>
-                <Cylinder
-                  args={[cw.radius, cw.radius, cw.thickness, 16]}
-                  position={[-cw.firstPos - (cw.gap + cw.thickness) * 2, 0, 0]}
-                  rotation={[0, 0, Math.PI / 2]}
-                  castShadow
-                >
-                  <meshStandardMaterial
-                    color={cwColor}
-                    metalness={0.9}
-                    roughness={0.3}
-                  />
-                </Cylinder>
+                <Counterweight
+                  shaftLength={cw.shaftLength} // length of the shaft
+                  shaftDiameter={cw.shaftRadius * 2} // diameter of the shaft
+                  endCapDiameter={cw.shaftRadius * 2.5} // diameter of the end cap
+                  endCapThickness={0.02} // thickness of the end cap
+                  weights={Array(cw.amount).fill(0).map((_, i) => ({
+                      offset: i === 0 ? cw.firstPos : cw.gap, // First weight offset, then gap for subsequent ones
+                      diameter: cw.radius * 2,
+                      thickness: cw.thickness,
+                      color: cwColor,
+                    }))
+                  }
+                />
               </group>
 
 
