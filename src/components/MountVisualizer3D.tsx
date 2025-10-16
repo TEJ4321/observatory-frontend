@@ -1,6 +1,6 @@
 import React, { Suspense, useMemo, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls, Ring, Stars, Cylinder } from "@react-three/drei";
 import { Card } from "./ui/card";
 import { ZoomIn, ZoomOut, RotateCcw, Telescope, Compass } from "lucide-react";
 import { Button } from "./ui/button";
@@ -104,7 +104,7 @@ export function MountVisualizer3D({
   polarAxisPositionHolderSide = 0.05,
   polarAxisLengthMotorSideFull = 0.17,
   polarAxisLengthMotorSideThick = 0.08,
-  polarAxisDiameterMotorSide = 0.12,
+  polarAxisDiameterMotorSide = 0.18,
   decAxisLengthMain = 0.28,
   decAxisDiameterMain = 0.11,
   decAxisPositionMain = 0.1,
@@ -126,7 +126,7 @@ export function MountVisualizer3D({
   tubeSensorAreaDiameter = 0.1,
   tubeSecondaryTubeLength = 0.48,
   tubeSecondaryTubeDiameter = 0.1,
-  tubeSecondaryTubeOffsetRadial = 0.12,
+  tubeSecondaryTubeOffsetRadial = 0.08,
   tubeSecondaryTubeOffsetAxial = 0,
 
 }: MountVisualizer3DProps) {
@@ -220,6 +220,7 @@ export function MountVisualizer3D({
             position: [domeRadius * 2, domeRadius * 1.5, domeRadius * 2],
             fov: 50,
           }}
+          gl={{ localClippingEnabled: true }}
           shadows
         >
           <Suspense fallback={null}>
@@ -231,20 +232,77 @@ export function MountVisualizer3D({
               shadow-mapSize-width={2048}
               shadow-mapSize-height={2048}
             />
-            {/* <Stars
+            <Stars
               radius={domeRadius * 2}
               depth={50}
               count={5000}
               factor={10}
-            /> */}
+            />
             <Floor size={domeRadius * 2.5} />
-            {/* {shutterState !== "open" && (
-              <Dome
-                radius={domeRadius}
-                azimuth={domeAzimuth}
-                shutterState={shutterState}
+
+            {/* Dome */}
+            <group position={[0, pierHeight, 0]}>
+              {shutterState !== "open" && (
+                <Dome
+                  radius={domeRadius}
+                  azimuth={domeAzimuth}
+                  shutterState={shutterState}
+                />
+              )}
+            </group>
+
+            {/* Observatory Walls */}
+            <group>
+              <meshStandardMaterial
+                color={"#d1d5db"}
+                metalness={0.2}
+                roughness={0.8}
               />
-            )} */}
+              {/* Outer Wall */}
+              <Cylinder
+                args={[
+                  domeRadius + 0.1,
+                  domeRadius + 0.1,
+                  pierHeight,
+                  64,
+                  1,
+                  true,
+                ]}
+                position={[0, pierHeight / 2, 0]}
+              >
+                <meshStandardMaterial
+                  color={"#d1d5db"}
+                  metalness={0.2}
+                  roughness={0.8}
+                  side={2}
+                />
+              </Cylinder>
+              {/* Inner Wall */}
+              <Cylinder
+                args={[domeRadius, domeRadius, pierHeight, 64, 1, true]}
+                position={[0, pierHeight / 2, 0]}
+              >
+                <meshStandardMaterial
+                  color={"#e5e7eb"}
+                  metalness={0.2}
+                  roughness={0.8}
+                  side={2}
+                />
+              </Cylinder>
+              {/* Top ring of the wall */}
+              <Ring
+                args={[domeRadius, domeRadius + 0.1, 64]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, pierHeight, 0]}
+              >
+                <meshStandardMaterial
+                  color={"#d1d5db"}
+                  metalness={0.2}
+                  roughness={0.8}
+                />
+              </Ring>
+            </group>
+
             <Mount
               ra={ra}
               dec={dec}

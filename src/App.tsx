@@ -183,7 +183,7 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   polarAxisPositionHolderSide: 0.05,
   polarAxisLengthMotorSideFull: 0.17,
   polarAxisLengthMotorSideThick: 0.08,
-  polarAxisDiameterMotorSide: 0.12,
+  polarAxisDiameterMotorSide: 0.18,
   decAxisLengthMain: 0.28,
   decAxisDiameterMain: 0.11,
   decAxisPositionMain: 0.1,
@@ -200,11 +200,11 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   tubeSensorAreaDiameter: 0.1,
   tubeSecondaryTubeLength: 0.48,
   tubeSecondaryTubeDiameter: 0.1,
-  tubeSecondaryTubeOffsetRadial: 0.12,
+  tubeSecondaryTubeOffsetRadial: 0.08,
   tubeSecondaryTubeOffsetAxial: 0,
   // API and Camera
   apiBaseUrl: "/api", // Use relative path to leverage Vite's proxy
-  pollingInterval: 10000,
+  pollingInterval: 2000,
   useWebSocket: false,
   telescopeCameraUrl:
     "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=800&q=80",

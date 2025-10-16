@@ -13,6 +13,11 @@ const hmsToHours = (hms: string): number => {
   return h + m / 60 + s / 3600;
 };
 
+interface DebugAxesProps {
+  showAxes?: boolean;
+  axesLength?: number;
+}
+
 interface MountProps {
   ra: number;
   dec: number;
@@ -82,12 +87,15 @@ interface MountProps {
   tubeSecondaryTubeColor?: string;
   tubeSecondaryTubeOffsetRadial: number;
   tubeSecondaryTubeOffsetAxial: number;
+
+  showAxes?: boolean;
+  axesLength?: number;
 }
 
 
 // PIER ==================================================================
 
-interface PierProps {
+interface PierProps extends DebugAxesProps {
   height: number;
   diameter: number;
   colorSide?: string;
@@ -111,11 +119,13 @@ const Pier = ({
   elevatorTopDiameter = 0.22,
   elevatorBottomDiameter = 0.33,
   elevatorColor = "#181818ff",
+  showAxes = false,
+  axesLength = 1,
 }: PierProps) => {
 
   return (
     <group>
-      <axesHelper args={[1]} />
+      {showAxes && <axesHelper args={[axesLength]} />}
       {/* Pier Base (sits on the observatory floor)*/}
       <Cylinder
         args={[diameter / 2, diameter / 2, height, 32]}
@@ -141,7 +151,7 @@ const Pier = ({
 
 // MOUNT BASE ============================================================
 
-interface MountBaseProps {
+interface MountBaseProps extends DebugAxesProps {
   baseDiskThickness: number;
   baseDiskDiameter: number;
   holderHeight: number;
@@ -163,10 +173,12 @@ const MountBase = ({
   polarAxisBoltThickness = 0.03,
   color = "#5e5e5eff",
   polarAxisBoltColor = "#d3d3d3ff",
+  showAxes = false,
+  axesLength = 1,
 }: MountBaseProps) => {
   return (
     <group>
-      <axesHelper args={[1]} />
+      {showAxes && <axesHelper args={[axesLength]} />}
       {/* Mount Base Cylinder (sits directly on the elevator on the pier)*/}
       <Cylinder
         args={[baseDiskDiameter / 2, baseDiskDiameter / 2, baseDiskThickness, 32]}
@@ -178,7 +190,7 @@ const MountBase = ({
 
       {/* Holder sides - this should be two rectangular prisms on either side of the polar axis hold it in place */}
       <group>
-        <axesHelper args={[1]} />
+        {showAxes && <axesHelper args={[axesLength]} />}
         <Box
           args={[holderThickness, holderHeight, baseDiskDiameter / 2]}
           position={[baseDiskDiameter / 2, holderHeight / 2, 0]}
@@ -210,7 +222,7 @@ const MountBase = ({
 
 // MOUNT POLAR (RA) AXIS COMPONENTS ======================================
 
-interface MountPolarAxisProps {
+interface MountPolarAxisProps extends DebugAxesProps {
   lengthHolderSide: number;
   diameterHolderSide: number;
   colorHolderSide?: string;
@@ -229,7 +241,9 @@ const MountPolarAxis = ({
   lengthMotorSideFull = 0.17,
   colorMotorSide = "#5e5e5eff",
   lengthMotorSideThick = 0.08,
-  diameterMotorSide = 0.12,
+  diameterMotorSide = 0.18,
+  showAxes = false,
+  axesLength = 1,
 }: MountPolarAxisProps) => {
   return (
     // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE HOLDER
@@ -239,7 +253,7 @@ const MountPolarAxis = ({
       <group position={[0, positionHolderSide, 0]}> 
         {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT BORDER BETWEEN THE HOLDER SIDE AND THE MOTOR SIDE */}
 
-        <axesHelper args={[1]} />
+        {showAxes && <axesHelper args={[axesLength]} />}
         {/* Holder Side Tube */}
         <Cylinder
           args={[diameterHolderSide / 2, diameterHolderSide / 2, lengthHolderSide, 32]}
@@ -260,7 +274,7 @@ const MountPolarAxis = ({
 
         {/* Cone on motor side (Connection point to the dec axis) */}
         <Cylinder
-          args={[diameterMotorSide / 2, 0.055, lengthMotorSideFull - lengthMotorSideThick, 32]}
+          args={[0.055, diameterMotorSide / 2, lengthMotorSideFull - lengthMotorSideThick, 32]}
           position={[0, (lengthMotorSideFull - lengthMotorSideThick) / 2 + lengthMotorSideThick, 0]}
           castShadow
         >
@@ -275,7 +289,7 @@ const MountPolarAxis = ({
 
 // DECLINATION AXIS ======================================================
 
-interface DeclinationAxisProps {
+interface DeclinationAxisProps extends DebugAxesProps {
   lengthMain: number;
   diameterMain: number;
   colorMain?: string;
@@ -293,6 +307,8 @@ const DeclinationAxis = ({
   lengthMotor = 0.08,
   diameterMotor = 0.18,
   colorMotor = "#5e5e5eff",
+  showAxes = false,
+  axesLength = 1,
 }: DeclinationAxisProps) => {
   return (
     // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE DEC
@@ -302,7 +318,7 @@ const DeclinationAxis = ({
       <group position={[0, positionMain, 0]}> 
         {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT BORDER BETWEEN THE MAIN SIDE AND THE MOTOR SIDE */}
 
-        <axesHelper args={[1]} />
+        {showAxes && <axesHelper args={[axesLength]} />}
         {/* Main Side */}
         <Cylinder
           args={[diameterMain / 2, diameterMain / 2, lengthMain, 32]}
@@ -336,7 +352,7 @@ interface WeightProps {
   color?: string;
 }
 
-interface CounterWeightProps {
+interface CounterWeightProps extends DebugAxesProps {
   shaftDiameter: number;
   shaftLength: number;
   shaftColor?: string;
@@ -358,6 +374,8 @@ const Counterweight = ({
     { offset: 0.03, diameter: 0.18, thickness: 0.06, color: "#b4b4b4ff" },
     { offset: 0.07, diameter: 0.18, thickness: 0.06, color: "#b4b4b4ff" },
   ],
+  showAxes = false,
+  axesLength = 1,
 }: CounterWeightProps) => {
   // This running offset will track the position for the next weight.
   // We start at the base of the shaft.
@@ -367,7 +385,7 @@ const Counterweight = ({
     <group>
       {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT THE START OF THE COUNTERWEIGHT SHAFT */}
 
-      <axesHelper args={[1]} />
+      {showAxes && <axesHelper args={[axesLength]} />}
       {/* Counterweight Shaft */}
       <Cylinder
         args={[shaftDiameter / 2, shaftDiameter / 2, shaftLength, 16]}
@@ -401,8 +419,7 @@ const Counterweight = ({
       {/* End Cap */}
       <Cylinder
         args={[endCapDiameter / 2, endCapDiameter / 2, endCapThickness, 8]}
-        position={[-(shaftLength + endCapThickness / 2), 0, 0]}
-        rotation={[0, 0, Math.PI / 2]}
+        position={[0, (shaftLength + endCapThickness / 2), 0]}
         castShadow
       >
         <meshStandardMaterial color={endCapColor || "#292929ff"} metalness={0.2} roughness={0.2} />
@@ -414,7 +431,7 @@ const Counterweight = ({
 
 // TELESCOPE TUBES =======================================================
 
-interface TelescopeTubeProps {
+interface TelescopeTubeProps extends DebugAxesProps {
   length: number;
   diameter: number;
   pivotPos: number;
@@ -440,8 +457,10 @@ const TelescopeTube = ({
   secondaryTubeLength = 0.48,
   secondaryTubeDiameter = 0.1,
   secondaryTubeColor = "#1588d4ff",
-  secondaryTubeOffsetRadial = 0.12,
+  secondaryTubeOffsetRadial = 0.08,
   secondaryTubeOffsetAxial = 0,
+  showAxes = false,
+  axesLength = 1,
 }: TelescopeTubeProps) => {
   return (
     // DATUM FOR THIS GROUP IS AT THE PIVOT POSITION OF THE TELESCOPE
@@ -451,7 +470,7 @@ const TelescopeTube = ({
       <group position={[0, -pivotPos, 0]}> 
         {/* DATUM FOR EVERYTHING WITHIN THIS GROUP IS AT THE START OF THE TELESCOPE TUBE */}
 
-        <axesHelper args={[1]} />
+        {showAxes && <axesHelper args={[axesLength]} />}
         {/* Telescope Tube */}
         <Cylinder
           args={[diameter / 2, diameter / 2, length, 32]}
@@ -554,6 +573,8 @@ export const Mount = ({
   tubeSecondaryTubeColor,
   tubeSecondaryTubeOffsetRadial,
   tubeSecondaryTubeOffsetAxial,
+  showAxes,
+  axesLength,
 }: MountProps) => {
   const raGroupRef = useRef<THREE.Group>(null!);
   const decGroupRef = useRef<THREE.Group>(null!);
@@ -654,10 +675,17 @@ export const Mount = ({
         elevatorTopDiameter={pierElevatorTopDiameter}
         elevatorBottomDiameter={pierElevatorBottomDiameter}
         elevatorColor={pierElevatorColor}
+        showAxes={showAxes}
+        axesLength={axesLength}
       />
-
       {/* Mount Base Group - positioned on top of the pier elevator */}
-      <group position={[mountOffset.x, pierHeight + pierElevatorHeight, mountOffset.z]}>
+      <group
+        position={[
+          mountOffset.x,
+          pierHeight + pierElevatorHeight,
+          mountOffset.z,
+        ]}
+      >
         <MountBase
           baseDiskThickness={mountBaseDiskThickness}
           baseDiskDiameter={mountBaseDiskDiameter}
@@ -668,11 +696,11 @@ export const Mount = ({
           polarAxisBoltThickness={mountBasePolarAxisBoltThickness}
           color={mountBaseColor}
           polarAxisBoltColor={mountBasePolarAxisBoltColor}
+          showAxes={showAxes}
+          axesLength={axesLength}
         />
-
         {/* RA Axis Origin - Position where the RA axis is held by the mount base */}
         <group position={[0, mountBasePolarAxisHeight, 0]}>
-
           {/* Latitude Tilt Group */}
           {/* This group is tilted in the world east-west axis to point the same direction as Earth's poles based on latitude */}
           <group rotation={[-latRad, 0, 0]}>
@@ -685,15 +713,20 @@ export const Mount = ({
               lengthMotorSideThick={polarAxisLengthMotorSideThick}
               diameterMotorSide={polarAxisDiameterMotorSide}
               colorMotorSide={polarAxisColorMotorSide}
+              showAxes={showAxes}
+              axesLength={axesLength}
             />
-
-
             {/* RA Hour Angle Rotation Group */}
-            <group ref={raGroupRef} position={[0, polarAxisLengthMotorSideFull + polarAxisPositionHolderSide, 0]}>
-
+            <group
+              ref={raGroupRef}
+              position={[
+                0,
+                polarAxisLengthMotorSideFull + polarAxisPositionHolderSide,
+                0,
+              ]}
+            >
               {/* Pier Side Rotation Group */}
-              <group ref={pierSideRef}>
-
+              <group ref={pierSideRef} rotation={[0, Math.PI, 0]}>
                 {/* Declination Axis Centre Group */}
                 <group position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
                   <DeclinationAxis
@@ -704,10 +737,14 @@ export const Mount = ({
                     lengthMotor={decAxisLengthMotor}
                     diameterMotor={decAxisDiameterMotor}
                     colorMotor={decAxisColorMotor}
+                    showAxes={showAxes}
+                    axesLength={axesLength}
                   />
-
                   {/* Counterweight Group */}
-                  <group position={[0, decAxisPositionMain - decAxisLengthMain, 0]}>
+                  <group
+                    rotation={[0, 0, Math.PI]}
+                    position={[0, decAxisPositionMain - decAxisLengthMain, 0]}
+                  >
                     <Counterweight
                       shaftDiameter={cwShaftDiameter}
                       shaftLength={cwShaftLength}
@@ -716,14 +753,20 @@ export const Mount = ({
                       endCapThickness={cwEndCapThickness}
                       endCapColor={cwEndCapColor}
                       weights={cwWeights}
+                      showAxes={showAxes}
+                      axesLength={axesLength}
                     />
                   </group>
-
                   {/* Declination Motor Rotation Group */}
-                  <group ref={decGroupRef} position={[0, decAxisPositionMain + decAxisLengthMotor, 0]}>
-
+                  <group
+                    ref={decGroupRef}
+                    position={[0, decAxisPositionMain + decAxisLengthMotor, 0]}
+                  >
                     {/* Telescope Tube Group */}
-                    <group rotation={[0, 0, Math.PI / 2]}>
+                    <group
+                      rotation={[-Math.PI, 0, -Math.PI / 2]}
+                      position={[0, tubeDiameter / 2, 0]}
+                    >
                       <TelescopeTube
                         length={tubeLength}
                         diameter={tubeDiameter}
@@ -737,24 +780,25 @@ export const Mount = ({
                         secondaryTubeColor={tubeSecondaryTubeColor}
                         secondaryTubeOffsetRadial={tubeSecondaryTubeOffsetRadial}
                         secondaryTubeOffsetAxial={tubeSecondaryTubeOffsetAxial}
+                        showAxes={showAxes}
+                        axesLength={axesLength}
                       />
                     </group>
-
-                  </group> {/* Declination Axis Motor Rotation */}
-
-                </group> {/* Declination Axis Centre*/}
-
-              </group> {/* Pier Side */}
-
-            </group> {/* RA Hour Angle */}
-
-          </group> {/* Latitude */}
-
-        </group> {/* RA Axis Origin */}
-
-      </group> {/* Mount Base */}
-
-    {/* Overall */}
-    </group> 
+                  </group>
+                  {/* Declination Axis Motor Rotation */}
+                </group>
+                {/* Declination Axis Centre*/}
+              </group>
+              {/* Pier Side */}
+            </group>
+            {/* RA Hour Angle */}
+          </group>
+          {/* Latitude */}
+        </group>
+        {/* RA Axis Origin */}
+      </group>
+      {/* Mount Base */}
+      {/* Overall */}
+    </group>
   );
 };
