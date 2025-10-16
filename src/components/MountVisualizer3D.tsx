@@ -236,19 +236,18 @@ export function MountVisualizer3D({
               radius={domeRadius * 2}
               depth={50}
               count={5000}
-              factor={10}
+              factor={4}
+              fade
             />
             <Floor size={domeRadius * 2.5} />
 
             {/* Dome */}
             <group position={[0, pierHeight, 0]}>
-              {shutterState !== "open" && (
-                <Dome
-                  radius={domeRadius}
-                  azimuth={domeAzimuth}
-                  shutterState={shutterState}
-                />
-              )}
+              <Dome
+                radius={domeRadius}
+                azimuth={domeAzimuth}
+                shutterState={shutterState}
+              />
             </group>
 
             {/* Observatory Walls */}

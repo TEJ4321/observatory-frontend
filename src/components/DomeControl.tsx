@@ -1,15 +1,18 @@
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button"; 
-import { Home, RotateCw, Building2 } from "lucide-react";
+import { Home, RotateCw, Building2, Link, Link2Off } from "lucide-react";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 interface DomeControlProps {
   azimuth: number;
   shutterState: "open" | "closed" | "opening" | "closing" | "unknown";
   isSlaved: boolean;
+  onToggleSlaving: () => void;
 }
 
-export function DomeControl({ azimuth, shutterState, isSlaved }: DomeControlProps) {
+export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }: DomeControlProps) {
   const getShutterBadgeVariant = () => {
     switch (shutterState) {
       case "open": return "default";
@@ -27,9 +30,13 @@ export function DomeControl({ azimuth, shutterState, isSlaved }: DomeControlProp
           <Building2 className="w-5 h-5 text-primary" />
           <h3>Dome Control</h3>
         </div>
-        <Badge variant={isSlaved ? "default" : "secondary"}>
-          {isSlaved ? "Slaved to Scope" : "Manual"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="dome-slave" className="flex items-center gap-2 cursor-pointer">
+            {isSlaved ? <Link className="w-4 h-4" /> : <Link2Off className="w-4 h-4" />}
+            Slave to Scope
+          </Label>
+          <Switch id="dome-slave" checked={isSlaved} onCheckedChange={() => onToggleSlaving()} />
+        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
@@ -127,11 +134,6 @@ export function DomeControl({ azimuth, shutterState, isSlaved }: DomeControlProp
                 <RotateCw className="w-4 h-4 mr-2" />
                 Sync
               </Button>
-            </div>
-            
-            <div className="mt-3 flex items-center gap-2">
-              <label className="opacity-70">Slave to Telescope:</label>
-              <input type="checkbox" checked={isSlaved} readOnly className="w-4 h-4" />
             </div>
           </div>
         </div>

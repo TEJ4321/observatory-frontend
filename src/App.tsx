@@ -9,9 +9,10 @@ import { ObservatoryLocation } from "./components/ObservatoryLocation";
 import { TelescopePointingControl } from "./components/TelescopePointingControl";
 import { WeatherConditions } from "./components/WeatherConditions";
 import { SettingsPanel, ObservatorySettings } from "./components/SettingsPanel";
-import { Telescope, Settings, Moon, Sun } from "lucide-react";
+import { Telescope, Settings, Moon, Sun, Loader2, Info } from "lucide-react";
 import * as api from "./services/api";
 import { Button } from "./components/ui/button";
+import { getGPUTier } from "detect-gpu";
 
 // The overall observatory state
 interface ObservatoryState {
@@ -23,6 +24,7 @@ interface ObservatoryState {
     isTracking: boolean;
     mountReady: boolean;
     pierSide: 'West' | 'East' | string;
+    status: string;
   };
   time: {
     localTime: Date;
@@ -98,6 +100,7 @@ const initialData: ObservatoryState = {
     isTracking: false,
     mountReady: false,
     pierSide: 'Unknown',
+    status: 'Unknown',
   },
   time: {
     localTime: new Date(),
@@ -205,6 +208,7 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   // API and Camera
   apiBaseUrl: "/api", // Use relative path to leverage Vite's proxy
   pollingInterval: 2000,
+  visualizerEnabled: true,
   useWebSocket: false,
   telescopeCameraUrl:
     "https://images.unsplash.com/photo-1464802686167-b939a6910659?w=800&q=80",
@@ -213,17 +217,43 @@ const DEFAULT_SETTINGS: ObservatorySettings = {
   cameraRefreshRate: 5,
 };
 
-// CODE START -----------------------------------------------------------------------------------
 export default function App() {
   const [data, setData] = useState<ObservatoryState>(initialData);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [lastWeatherUpdate, setLastWeatherUpdate] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<ObservatorySettings>(() => {
-    const saved = localStorage.getItem("observatorySettings");
-    return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    try {
+      const saved = localStorage.getItem("observatorySettings");
+      const savedSettings = saved ? JSON.parse(saved) : {};
+      return { ...DEFAULT_SETTINGS, ...savedSettings };
+    } catch (error) {
+      console.error("Failed to parse settings from localStorage", error);
+      return DEFAULT_SETTINGS;
+    }
   });
+
+  // Detect GPU tier on initial load to set a sensible default for the visualizer.
+  // Also, default to dark mode.
+  useEffect(() => {
+    (async () => {
+      document.documentElement.classList.add("dark");
+
+      // Only run GPU detection if the user hasn't already saved a preference for the visualizer
+      if (settings.visualizerEnabled === null) {
+        try {
+          const { tier } = await getGPUTier();
+          // Tier 0 and 1 are considered low-end, so disable the visualizer by default.
+          const enableVisualizer = tier > 1;
+          handleSettingsSave({ ...settings, visualizerEnabled: enableVisualizer });
+        } catch (e) {
+          console.error("GPU detection failed, enabling visualizer by default.", e);
+          handleSettingsSave({ ...settings, visualizerEnabled: true });
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     api.setApiBaseUrl(settings.apiBaseUrl);
@@ -237,17 +267,43 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  const handleSettingsSave = (newSettings: ObservatorySettings) => {
+    setSettings(newSettings);
+    localStorage.setItem("observatorySettings", JSON.stringify(newSettings));
+    setSettingsOpen(false);
+  };
+
   const handleSetTarget = async (coords: {
     ra?: number;
     dec?: number;
     alt?: number;
     az?: number;
+    direction?: 'N' | 'S' | 'E' | 'W';
+    duration_ms?: number;
+    halt?: 'all' | 'N' | 'S' | 'E' | 'W';
   }) => {
-    console.log("Slewing telescope to:", coords);
-    try {
-      await api.slewTelescope(coords);
-    } catch (error) {
-      console.error("Failed to slew telescope:", error);
+    if (coords.ra !== undefined || coords.alt !== undefined) {
+      console.log("Slewing telescope to:", coords);
+      try {
+        await api.slewTelescope(coords);
+      } catch (error) {
+        console.error("Failed to slew telescope:", error);
+      }
+    } else if (coords.direction && coords.duration_ms) {
+      console.log(`Nudging telescope ${coords.direction} for ${coords.duration_ms}ms`);
+      try {
+        await api.nudgeTelescope(coords.direction, coords.duration_ms);
+      } catch (error) {
+        console.error("Failed to nudge telescope:", error);
+      }
+    } else if (coords.direction) {
+      console.log(`Moving telescope ${coords.direction}`);
+      await api.moveTelescope(coords.direction);
+    } else if (coords.halt) {
+      const direction = coords.halt === 'all' ? undefined : coords.halt;
+      console.log(`Halting telescope movement for direction: ${direction || 'all'}`);
+      await api.haltTelescope(direction);
+    } else {
     }
   };
 
@@ -273,6 +329,21 @@ export default function App() {
       console.error("Failed to flip pier:", error);
     }
   };
+
+  const handleToggleDomeSlaving = async () => {
+    const newSlavedState = !data.dome.isSlaved;
+    console.log(`Setting dome slaving to: ${newSlavedState}`);
+    try {
+      await api.setDomeSlave(newSlavedState);
+      setData((prev) => ({
+        ...prev,
+        dome: { ...prev.dome, isSlaved: newSlavedState },
+      }));
+    } catch (error) {
+      console.error("Failed to toggle dome slaving:", error);
+    }
+  };
+
 
   const fetchAllData = useCallback(async () => {
     const now = Date.now();
@@ -436,20 +507,39 @@ export default function App() {
             isTracking={data.telescope.isTracking}
             mountReady={data.telescope.mountReady}
             pierSide={data.telescope.pierSide}
+            status={data.telescope.status}
             onSetTarget={handleSetTarget}
             onToggleTracking={handleToggleTracking}
             onFlipPierSide={handleFlipPierSide}
           />
 
-          <MountVisualizer3D
-            {...data.telescope}
-            domeAzimuth={data.dome.azimuth}
-            siderealTime={data.time.siderealTime}
-            shutterState={data.dome.shutterState}
-            {...settings}
-          />
+          {settings.visualizerEnabled === null ? ( // Show loader while detecting
+            <div className="h-[450px] sm:h-[550px] flex items-center justify-center bg-muted/40 rounded-lg">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <p className="ml-4 text-muted-foreground">Detecting GPU performance...</p>
+            </div>
+          ) : settings.visualizerEnabled ? ( // Show visualizer if enabled
+            <MountVisualizer3D
+              {...data.telescope}
+              domeAzimuth={data.dome.azimuth}
+              siderealTime={data.time.siderealTime}
+              shutterState={data.dome.shutterState}
+              {...settings}
+            />
+          ) : ( // Show info message if disabled
+            <div className="h-[200px] flex flex-col items-center justify-center bg-muted/40 rounded-lg p-4 text-center">
+              <Info className="w-8 h-8 text-muted-foreground mb-4" />
+              <h4 className="font-semibold">3D Visualizer Disabled</h4>
+              <p className="text-muted-foreground mt-1">
+                To improve performance, the 3D model is not being rendered.
+              </p>
+              <Button variant="link" onClick={() => setSettingsOpen(true)} className="mt-2">
+                You can re-enable it in Settings.
+              </Button>
+            </div>
+          )}
 
-          <DomeControl {...data.dome} />
+          <DomeControl {...data.dome} onToggleSlaving={handleToggleDomeSlaving} />
           <Temperatures {...data.motors} />
           <CameraFeeds {...data.cameras} />
         </div>
@@ -467,7 +557,7 @@ export default function App() {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         settings={settings}
-        onSettingsChange={setSettings}
+        onSettingsChange={handleSettingsSave}
       />
     </div>
   );

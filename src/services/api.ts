@@ -105,6 +105,30 @@ export const flipPierSide = () =>
 export const parkTelescope = () => fetchApi("/telescope/park", { method: "POST" });
 export const unparkTelescope = () => fetchApi("/telescope/unpark", { method: "POST" });
 
+export const nudgeTelescope = (direction: 'N' | 'S' | 'E' | 'W', duration_ms: number) =>
+  fetchApi("/telescope/nudge", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ direction, duration_ms }),
+  });
+
+export const moveTelescope = (direction: 'N' | 'S' | 'E' | 'W') =>
+  fetchApi("/telescope/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ direction }),
+  });
+
+export const haltTelescope = (direction?: 'N' | 'S' | 'E' | 'W') =>
+  fetchApi("/telescope/halt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // The backend expects an empty string to halt all movement
+    body: JSON.stringify({ direction: direction || "" }),
+  });
+
+
+
 // --- Dome & Shutter Control ---
 
 export const getDomeStatus = () => fetchApi("/dome/status");
@@ -246,6 +270,7 @@ export const getObservatoryState = async (
         az: parseCoordinate(mountStatus?.az_str),
         isTracking: mountStatus?.is_tracking ?? false,
         mountReady: mountStatus?.status?.toLowerCase().includes("tracking") || mountStatus?.status?.toLowerCase().includes("stopped"),
+        status: mountStatus?.status ?? "Unknown",
         // Capitalize 'east' or 'west'
         pierSide: mountStatus?.pier_side 
             ? mountStatus.pier_side.charAt(0).toUpperCase() + mountStatus.pier_side.slice(1) 

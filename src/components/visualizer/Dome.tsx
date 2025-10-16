@@ -12,16 +12,16 @@ interface DomeProps {
 export const Dome = ({ radius, azimuth, shutterState }: DomeProps) => {
   const groupRef = useRef<THREE.Group>(null!);
   const shutterRef = useRef<THREE.Mesh>(null!);
-  const domeThickness = 0.1; // 10cm thick dome
 
   const domeAzRad = useMemo(() => THREE.MathUtils.degToRad(azimuth), [azimuth]);
 
   // Define two parallel clipping planes for the fixed-width slit
-  const slitWidth = 0.5; // 40cm fixed width
+  const slitWidth = 0.5; // 50cm fixed width
   const clipPlanes = useMemo(
     () => [
       new THREE.Plane(new THREE.Vector3(1, 0, 0), -slitWidth / 2),
       new THREE.Plane(new THREE.Vector3(-1, 0, 0), -slitWidth / 2),
+      new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), // This plane cuts the slit at the zenith
     ],
     [slitWidth]
   );
@@ -73,133 +73,72 @@ export const Dome = ({ radius, azimuth, shutterState }: DomeProps) => {
 
   return (
     <group ref={groupRef}>
-      {/* Hollow Upper Dome (with slit) */}
-      <group>
-        {/* Outer Shell */}
-        <Sphere
-          args={[radius, 64, 64, 0, Math.PI * 2, 0, slitStartPhi]}
-          castShadow
-        >
-          <meshStandardMaterial
-            color="#f0f0f0"
-            side={THREE.FrontSide}
-            transparent
-            opacity={0.15}
-            metalness={0.6}
-            roughness={0.4}
-            clippingPlanes={clipPlanes}
-            clipIntersection={true}
-          />
-        </Sphere>
-        {/* Inner Shell */}
-        <Sphere
-          args={[radius - domeThickness, 64, 64, 0, Math.PI * 2, 0, slitStartPhi]}
-        >
-          <meshStandardMaterial
-            color="#e0e0e0"
-            side={THREE.BackSide}
-            metalness={0.6}
-            roughness={0.4}
-            clippingPlanes={clipPlanes}
-            clipIntersection={true}
-          />
-        </Sphere>
-      </group>
+      {/* Upper dome structure, clipped to create a slit */}
+      {/* This part goes from the zenith (0) down to 70 degrees */}
+      <Sphere
+        args={[radius, 64, 64, 0, Math.PI * 2, 0, slitStartPhi]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#f0f0f0"
+          side={THREE.DoubleSide}
+          transparent
+          opacity={0.15}
+          metalness={0.6}
+          roughness={0.4}
+          clippingPlanes={clipPlanes}
+          clipIntersection={true} // Render the part *outside* the planes
+        />
+      </Sphere>
 
       {/* Shutter piece that slides over the slit */}
-      <group ref={shutterRef}>
-        {/* Outer Shutter */}
-        <Sphere
-          args={[
-            radius + 0.01, // Slightly larger radius to avoid z-fighting
-            64,
-            32,
-            0,
-            Math.PI * 2,
-            0,
-            slitStartPhi, // Match the upper dome part
-          ]}
-          castShadow
-        >
-          <meshStandardMaterial
-            color="#7d578d" // A distinct color for the shutter
-            side={THREE.FrontSide}
-            metalness={0.7}
-            roughness={0.3}
-            clippingPlanes={clipPlanes}
-            clipIntersection={false} // Render the part *inside* the planes
-          />
-        </Sphere>
-        {/* Inner Shutter */}
-        <Sphere
-          args={[
-            radius - domeThickness - 0.01,
-            64,
-            32,
-            0,
-            Math.PI * 2,
-            0,
-            slitStartPhi,
-          ]}
-        >
-          <meshStandardMaterial
-            color="#6a4a7a"
-            side={THREE.BackSide}
-            metalness={0.7}
-            roughness={0.3}
-            clippingPlanes={clipPlanes}
-            clipIntersection={false}
-          />
-        </Sphere>
-      </group>
+      {/* This piece is clipped to only appear *inside* the slit area */}
+      <Sphere
+        ref={shutterRef}
+        args={[
+          radius + 0.01, // Slightly larger radius to avoid z-fighting
+          64,
+          32,
+          0,
+          Math.PI * 2,
+          0,
+          slitStartPhi, // Match the upper dome part
+        ]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#7d578d" // A distinct color for the shutter
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+          clippingPlanes={clipPlanes}
+          clipIntersection={false} // Render the part *inside* the planes
+        />
+      </Sphere>
 
       {/* Solid base ring of the dome */}
       {/* This part goes from 70 degrees down to the horizon (90 degrees) */}
-      <group>
-        {/* Outer Ring */}
-        <Sphere
-          args={[
-            radius,
-            64,
-            64,
-            0,
-            Math.PI * 2,
-            slitStartPhi,
-            horizonAngle - slitStartPhi,
-          ]}
-          castShadow
-        >
-          <meshStandardMaterial
-            color="#f0f0f0"
-            side={THREE.FrontSide}
-            transparent
-            opacity={0.15}
-            metalness={0.6}
-            roughness={0.4}
-          />
-        </Sphere>
-        {/* Inner Ring */}
-        <Sphere
-          args={[
-            radius - domeThickness,
-            64,
-            64,
-            0,
-            Math.PI * 2,
-            slitStartPhi,
-            horizonAngle - slitStartPhi,
-          ]}
-        >
-          <meshStandardMaterial
-            color="#e0e0e0"
-            side={THREE.BackSide}
-            transparent
-            opacity={0.15}
-            metalness={0.6}
-            roughness={0.4}
-          />
-        </Sphere>
-      </group>
+      <Sphere
+        args={[
+          radius,
+          64,
+          64,
+          0,
+          Math.PI * 2,
+          slitStartPhi,
+          horizonAngle - slitStartPhi,
+        ]}
+        castShadow
+      >
+        <meshStandardMaterial
+          color="#f0f0f0"
+          side={THREE.DoubleSide}
+          transparent
+          opacity={0.15}
+          metalness={0.6}
+          roughness={0.4}
+        />
+      </Sphere>
     </group>
   );
 };

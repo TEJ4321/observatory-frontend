@@ -4,7 +4,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea } from "./ui/scroll-area"; 
 import { Globe, Mountain, Telescope, Settings2, Camera, Wifi } from "lucide-react";
 
 export interface ObservatorySettings {
@@ -73,6 +73,7 @@ export interface ObservatorySettings {
   // API Configuration
   apiBaseUrl: string;
   pollingInterval: number;
+  visualizerEnabled: boolean | null;
   useWebSocket: boolean;
 
   // Camera Configuration
@@ -184,6 +185,28 @@ export function SettingsPanel({ open, onOpenChange, settings, onSettingsChange }
                     />
                   </div>
                 </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h4 className="flex items-center gap-2 opacity-90">
+                  <Telescope className="w-4 h-4" />
+                  Visualizer
+                </h4>
+                <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="visualizerEnabled"
+                      checked={!!settings.visualizerEnabled}
+                      onChange={(e) => handleChange('visualizerEnabled', e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="visualizerEnabled" className="cursor-pointer">
+                      Enable 3D Observatory Visualizer
+                    </Label>
+                  </div>
+                  <p className="text-xs opacity-60">Disable to improve performance on less powerful devices.</p>
               </div>
 
               <Separator />
