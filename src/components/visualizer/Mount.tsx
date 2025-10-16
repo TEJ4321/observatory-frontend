@@ -19,13 +19,69 @@ interface MountProps {
   pierSide: "East" | "West" | string;
   siderealTime: string;
   latitude: number;
-  pierHeight: number;
-  pierRadius: number;
-  mountHeight: number;
   mountOffset: { x: number; z: number };
-  raAxis: { length: number; radius: number };
-  decAxis: { length: number; radius: number };
-  tube: { length: number; radius: number; pivotPos: number };
+
+  // Pier
+  pierHeight: number;
+  pierDiameter: number;
+  pierColorSide?: string;
+  pierElevatorHeight: number;
+  pierElevatorTopDiameter: number;
+  pierElevatorBottomDiameter: number;
+  pierElevatorColor?: string;
+
+  // Mount Base
+  mountBaseDiskThickness: number;
+  mountBaseDiskDiameter: number;
+  mountBaseHolderHeight: number;
+  mountBaseHolderThickness: number;
+  mountBasePolarAxisHeight: number;
+  mountBasePolarAxisBoltDiameter: number;
+  mountBasePolarAxisBoltThickness: number;
+  mountBaseColor?: string;
+  mountBasePolarAxisBoltColor?: string;
+
+  // Mount Polar Axis (RA)
+  polarAxisLengthHolderSide: number;
+  polarAxisDiameterHolderSide: number;
+  polarAxisColorHolderSide?: string;
+  polarAxisPositionHolderSide: number;
+  polarAxisLengthMotorSideFull: number;
+  polarAxisLengthMotorSideThick: number;
+  polarAxisDiameterMotorSide: number;
+  polarAxisColorMotorSide?: string;
+
+  // Declination Axis
+  decAxisLengthMain: number;
+  decAxisDiameterMain: number;
+  decAxisColorMain?: string;
+  decAxisPositionMain: number;
+  decAxisLengthMotor: number;
+  decAxisDiameterMotor: number;
+  decAxisColorMotor?: string;
+
+  // Counterweight
+  cwShaftDiameter: number;
+  cwShaftLength: number;
+  cwShaftColor?: string;
+  cwEndCapDiameter: number;
+  cwEndCapThickness: number;
+  cwEndCapColor?: string;
+  cwWeights: WeightProps[];
+
+  // Telescope Tube
+  tubeLength: number;
+  tubeDiameter: number;
+  tubePivotPos: number;
+  tubeColor?: string;
+  tubeSensorAreaLength: number;
+  tubeSensorAreaDiameter: number;
+  tubeSensorAreaColor?: string;
+  tubeSecondaryTubeLength: number;
+  tubeSecondaryTubeDiameter: number;
+  tubeSecondaryTubeColor?: string;
+  tubeSecondaryTubeOffsetRadial: number;
+  tubeSecondaryTubeOffsetAxial: number;
 }
 
 
@@ -44,6 +100,7 @@ interface PierProps {
   elevatorColor?: string;
 
 }
+
 
 const Pier = ({
   height = 1.2,
@@ -434,24 +491,69 @@ const TelescopeTube = ({
 
 
 
-
-
-
-
 export const Mount = ({
   ra,
   dec,
   pierSide,
   siderealTime,
   latitude,
-  pierHeight,
-  pierRadius,
-  mountHeight,
   mountOffset,
-  raAxis,
-  decAxis,
-  tube,
-  cw,
+  // Pier
+  pierHeight,
+  pierDiameter,
+  pierColorSide,
+  pierElevatorHeight,
+  pierElevatorTopDiameter,
+  pierElevatorBottomDiameter,
+  pierElevatorColor,
+  // Mount Base
+  mountBaseDiskThickness,
+  mountBaseDiskDiameter,
+  mountBaseHolderHeight,
+  mountBaseHolderThickness,
+  mountBasePolarAxisHeight,
+  mountBasePolarAxisBoltDiameter,
+  mountBasePolarAxisBoltThickness,
+  mountBaseColor,
+  mountBasePolarAxisBoltColor,
+  // Mount Polar Axis (RA)
+  polarAxisLengthHolderSide,
+  polarAxisDiameterHolderSide,
+  polarAxisColorHolderSide,
+  polarAxisPositionHolderSide,
+  polarAxisLengthMotorSideFull,
+  polarAxisLengthMotorSideThick,
+  polarAxisDiameterMotorSide,
+  polarAxisColorMotorSide,
+  // Declination Axis
+  decAxisLengthMain,
+  decAxisDiameterMain,
+  decAxisColorMain,
+  decAxisPositionMain,
+  decAxisLengthMotor,
+  decAxisDiameterMotor,
+  decAxisColorMotor,
+  // Counterweight
+  cwShaftDiameter,
+  cwShaftLength,
+  cwShaftColor,
+  cwEndCapDiameter,
+  cwEndCapThickness,
+  cwEndCapColor,
+  cwWeights,
+  // Telescope Tube
+  tubeLength,
+  tubeDiameter,
+  tubePivotPos,
+  tubeColor,
+  tubeSensorAreaLength,
+  tubeSensorAreaDiameter,
+  tubeSensorAreaColor,
+  tubeSecondaryTubeLength,
+  tubeSecondaryTubeDiameter,
+  tubeSecondaryTubeColor,
+  tubeSecondaryTubeOffsetRadial,
+  tubeSecondaryTubeOffsetAxial,
 }: MountProps) => {
   const raGroupRef = useRef<THREE.Group>(null!);
   const decGroupRef = useRef<THREE.Group>(null!);
@@ -480,9 +582,9 @@ export const Mount = ({
       );
     }
     if (decGroupRef.current) {
-      // The Dec group rotates around its local X axis for declination.
-      decGroupRef.current.rotation.x = THREE.MathUtils.lerp(
-        decGroupRef.current.rotation.x,
+      // The Dec group rotates around its local Y axis for declination.
+      decGroupRef.current.rotation.y = THREE.MathUtils.lerp(
+        decGroupRef.current.rotation.y,
         decRad,
         0.1
       );
@@ -497,136 +599,169 @@ export const Mount = ({
     }
   });
 
-  const mountColor = "#3b82f6";
-  const raColor = "#f9ca24";
-  const decColor = "#ef4444";
-  const tubeColor = "#ff8229ff";
-  const cwColor = "#4b5563";
-  
+
+  /** ====================================================================
+   * Transformation Definitions and Order:
+   * 
+   * World Axes:
+   * +X is East
+   * +Y is Up (Zenith)
+   * +Z is South
+   * 
+   * Order of object construction positioning and rotation (nested):
+   * 1. Pier placed at (0,0), with built in mount elevator located on top of it
+   *    - no rotations
+   * 
+   *    2. Mount base placed on top of mount elevator
+   *      - no rotations
+   * 
+   *      3. RA Axis (latitude tilt group) placed at the holder height above the mount base mount
+   *        - Rotated in the world x-axis (East/West axis) by -latRad
+   *        - +X: Still points East.
+   *        - +Y: Is now the Polar Axis (points towards the celestial pole).
+   *        - +Z: Tilted from the horizon, perpendicular to the Polar Axis.
+   * 
+   *        4. RA Motor group (RA hour angle rotation group) - the stuff connected to the rotating RA motor, located at: lengthMotorSideFull + positionHolderSide from the mount point of the RA axis on the holder
+   *          - This rotates around its local y-axis, which is the celestial polar axis
+   * 
+   *          5. Pier Side rotation group (rotates about local y-axis again to allow for 180 degrees of rotation)
+   *            
+   *            6. Declination Axis group
+   *              - GROUP rotated 90 degrees so that its local y-axis is perpendicular to the pier side rotation group's y-axis
+   *              - Contains the declination axis body and the counterweights and shaft on the end of the main side
+   *              
+   *              7. Declination Rotation group
+   *                - GROUP rotated by the amount of declination degrees
+   *                
+   *                8. Telescope tube group
+   * 
+   * 
+   * =====================================================================
+   */
+
+
+
+
   return (
-    <group position={[mountOffset.x, 0, mountOffset.z]}>
-      
+    <group position={[0, 0, 0]}>
       {/* Pier */}
-      <Cylinder
-        args={[0.25, 0.25, pierHeight, 32]}
-        position={[0, pierHeight / 2, 0]}
-      >
-        <meshStandardMaterial color="#666" metalness={0.8} roughness={0.4} />
-      </Cylinder>
-      {/* Mount Base */}
-      <Cylinder
-        args={[raAxis.radius * 1.5, raAxis.radius * 3, mountHeight, 16]}
-        position={[0, pierHeight + mountHeight / 2, 0]}
-        castShadow
-      >
-      </Cylinder>
+      <Pier
+        height={pierHeight}
+        diameter={pierDiameter}
+        colorSide={pierColorSide}
+        mountOffset={mountOffset}
+        elevatorHeight={pierElevatorHeight}
+        elevatorTopDiameter={pierElevatorTopDiameter}
+        elevatorBottomDiameter={pierElevatorBottomDiameter}
+        elevatorColor={pierElevatorColor}
+      />
 
-      {/* Mount Ball - this group is tilted in the world east-west axis to point the same direction as Earth's poles based on latitude */}
-      <group position={[0, pierHeight + mountHeight, 0]} rotation={[-latRad, 0, 0]}>
-        
-        <Sphere
-          args={[raAxis.radius, 32, 32]}
-          position={[0, 0, 0]}
-          castShadow
-        >
-        </Sphere>
-        
-        
-        
-        {/* <axesHelper args={[0.25]} /> Axis for the tilted mount base */}
-        
-        {/* RA Axis Housing (rotates for Hour Angle) */}
-        <group ref={raGroupRef}>
-          {/* <axesHelper args={[0.25]} /> Axis for RA rotation */}
+      {/* Mount Base Group - positioned on top of the pier elevator */}
+      <group position={[0, pierHeight + pierElevatorHeight, 0]}>
+        <MountBase
+          baseDiskThickness={mountBaseDiskThickness}
+          baseDiskDiameter={mountBaseDiskDiameter}
+          holderHeight={mountBaseHolderHeight}
+          holderThickness={mountBaseHolderThickness}
+          polarAxisHeight={mountBasePolarAxisHeight}
+          polarAxisBoltDiameter={mountBasePolarAxisBoltDiameter}
+          polarAxisBoltThickness={mountBasePolarAxisBoltThickness}
+          color={mountBaseColor}
+          polarAxisBoltColor={mountBasePolarAxisBoltColor}
+        />
 
+        {/* RA Axis Origin - Position where the RA axis is held by the mount base */}
+        <group position={[0, mountBasePolarAxisHeight, 0]}>
 
-          {/* This group flips for Pier Side */}
-          <group ref={pierSideRef} position={[0, raAxis.length / 2, 0]}>
-            <Cylinder
-              args={[raAxis.radius, raAxis.radius, raAxis.length, 16]}
-              rotation={[0, 0, 0]}
-              position={[0, 0, 0]}
-              castShadow
-            >
-              <meshStandardMaterial
-                color={mountColor}
-                metalness={0.7}
-                roughness={0.3}
-              />
-            </Cylinder>
-
-            {/* Dec Axis Assembly. It's a child of the pier-side group. */}
-            <group position={[0, raAxis.length / 2, 0]}>
-              {/* Axis for Pier Side flip */}
-              <axesHelper args={[1]} />
-              
-              {/* Dec Axis Cylinder on mount */}
-              <Cylinder
-                args={[
-                  decAxis.radius,
-                  decAxis.radius,
-                  decAxis.length,
-                  16,
-                ]}
-                rotation={[0, 0, Math.PI / 2]}
-                position={[decAxis.length / 2, 0, 0]}
-                castShadow
-              >
-                <meshStandardMaterial
-                  color={decColor}
-                  metalness={0.7}
-                  roughness={0.3}
-                />
-              </Cylinder>
-              
-              {/* Counterweight Shaft & Weights */}
-              <group position={[0, 0, 0]}>
-                <Counterweight
-                  shaftLength={cw.shaftLength} // length of the shaft
-                  shaftDiameter={cw.shaftRadius * 2} // diameter of the shaft
-                  endCapDiameter={cw.shaftRadius * 2.5} // diameter of the end cap
-                  endCapThickness={0.02} // thickness of the end cap
-                  weights={Array(cw.amount).fill(0).map((_, i) => ({
-                      offset: i === 0 ? cw.firstPos : cw.gap, // First weight offset, then gap for subsequent ones
-                      diameter: cw.radius * 2,
-                      thickness: cw.thickness,
-                      color: cwColor,
-                    }))
-                  }
-                />
-              </group>
+          {/* Latitude Tilt Group */}
+          {/* This group is tilted in the world east-west axis to point the same direction as Earth's poles based on latitude */}
+          <group rotation={[-latRad, 0, 0]}>
+            <MountPolarAxis
+              lengthHolderSide={polarAxisLengthHolderSide}
+              diameterHolderSide={polarAxisDiameterHolderSide}
+              colorHolderSide={polarAxisColorHolderSide}
+              positionHolderSide={polarAxisPositionHolderSide}
+              lengthMotorSideFull={polarAxisLengthMotorSideFull}
+              lengthMotorSideThick={polarAxisLengthMotorSideThick}
+              diameterMotorSide={polarAxisDiameterMotorSide}
+              colorMotorSide={polarAxisColorMotorSide}
+            />
 
 
-              {/* This group rotates for Declination */}
-              <group ref={decGroupRef} position={[decAxis.length, 0, 0]}>
-                <axesHelper args={[4]} />
-                
-                {/* Telescope Tube */}
-                <group rotation={[Math.PI/2, 0, 0]} position={[0, 0, -tube.pivotPos * tube.length]}>
-                  {/* Axis for Declination rotation */}
-                  {/* <axesHelper args={[4]} />  */}
-                  <Cylinder
-                    args={[tube.radius, tube.radius, tube.length, 32]}
-                    position={[0, tube.length / 2, 0]}
-                    rotation={[0, 0, 0]}
-                    castShadow
-                  >
-                    <meshStandardMaterial
-                      color={tubeColor}
-                      metalness={0.9}
-                      roughness={0.2}
+            {/* RA Hour Angle Rotation Group */}
+            <group ref={raGroupRef} position={[0, polarAxisLengthMotorSideFull + polarAxisPositionHolderSide, 0]}>
+
+              {/* Pier Side Rotation Group */}
+              <group ref={pierSideRef}>
+
+                {/* Declination Axis Centre Group */}
+                <group position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                  <DeclinationAxis
+                    lengthMain={decAxisLengthMain}
+                    diameterMain={decAxisDiameterMain}
+                    colorMain={decAxisColorMain}
+                    positionMain={decAxisPositionMain}
+                    lengthMotor={decAxisLengthMotor}
+                    diameterMotor={decAxisDiameterMotor}
+                    colorMotor={decAxisColorMotor}
+                  />
+
+                  {/* Counterweight Group */}
+                  <group position={[0, decAxisPositionMain - decAxisLengthMain, 0]}>
+                    <Counterweight
+                      shaftDiameter={cwShaftDiameter}
+                      shaftLength={cwShaftLength}
+                      shaftColor={cwShaftColor}
+                      endCapDiameter={cwEndCapDiameter}
+                      endCapThickness={cwEndCapThickness}
+                      endCapColor={cwEndCapColor}
+                      weights={cwWeights}
                     />
-                  </Cylinder>
+                  </group>
+
+                  {/* Declination Motor Rotation Group */}
+                  <group ref={decGroupRef} position={[0, decAxisPositionMain + decAxisLengthMotor, 0]}>
+
+                    {/* Telescope Tube Group */}
+                    <group rotation={[0, 0, Math.PI / 2]}>
+                      <TelescopeTube
+                        length={tubeLength}
+                        diameter={tubeDiameter}
+                        pivotPos={tubePivotPos}
+                        color={tubeColor}
+                        sensorAreaLength={tubeSensorAreaLength}
+                        sensorAreaDiameter={tubeSensorAreaDiameter}
+                        sensorAreaColor={tubeSensorAreaColor}
+                        secondaryTubeLength={tubeSecondaryTubeLength}
+                        secondaryTubeDiameter={tubeSecondaryTubeDiameter}
+                        secondaryTubeColor={tubeSecondaryTubeColor}
+                        secondaryTubeOffsetRadial={tubeSecondaryTubeOffsetRadial}
+                        secondaryTubeOffsetAxial={tubeSecondaryTubeOffsetAxial}
+                      />
+                    </group>
+
+                  {/* Declination Axis Motor Rotation */}
+                  </group>
+
+                {/* Declination Axis Centre*/}
                 </group>
 
-
+              {/* Pier Side */}
               </group>
 
+            {/* RA Hour Angle */}
             </group>
 
+          {/* Latitude */}
           </group>
+
+        {/* RA Axis Origin */}
         </group>
+
+      {/* Mount Base */}
       </group>
+
+    {/* Overall */}
     </group>
   );
 };
