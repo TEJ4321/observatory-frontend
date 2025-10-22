@@ -505,7 +505,7 @@ const TelescopeTube = ({
     
   )
 }
-        
+
 
 
 
@@ -585,14 +585,26 @@ export const Mount = ({
 
   // Animate mount rotation based on RA, Dec, and Pier Side
   useFrame(() => {
+    
     // Calculate Hour Angle = Local Sidereal Time - Right Ascension
     const lstHours = hmsToHours(siderealTime);
     const haHours = lstHours - ra;
     const haRad = THREE.MathUtils.degToRad(haHours * 15);
-    const decRad = THREE.MathUtils.degToRad(dec);
-
+    
+    var decRad = 2 * THREE.MathUtils.degToRad(latitude) - THREE.MathUtils.degToRad(dec);
+    
     // Determine pier side flip angle
-    const pierAngle = pierSide === "East" ? 0 : Math.PI;
+    const pierAngle = pierSide === "East" ? Math.PI : 0;
+
+
+    if (pierSide === "East")
+    {
+      decRad = 2 * THREE.MathUtils.degToRad(latitude) - THREE.MathUtils.degToRad(dec);
+    }
+    else
+    {
+      decRad = -2 * THREE.MathUtils.degToRad(latitude) + THREE.MathUtils.degToRad(dec);
+    }
 
     if (raGroupRef.current) {
       // The RA group rotates around the polar axis (local Y) for the hour angle.
@@ -726,7 +738,7 @@ export const Mount = ({
               ]}
             >
               {/* Pier Side Rotation Group */}
-              <group ref={pierSideRef} rotation={[0, Math.PI, 0]}>
+              <group ref={pierSideRef}>
                 {/* Declination Axis Centre Group */}
                 <group position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
                   <DeclinationAxis
@@ -762,6 +774,7 @@ export const Mount = ({
                     ref={decGroupRef}
                     position={[0, decAxisPositionMain + decAxisLengthMotor, 0]}
                   >
+
                     {/* Telescope Tube Group */}
                     <group
                       rotation={[-Math.PI, 0, -Math.PI / 2]}
