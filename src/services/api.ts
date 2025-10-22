@@ -78,6 +78,9 @@ export const slewTelescope = async (coords: {
     dec?: number;
     alt?: number;
     az?: number;
+}, slewOptions: {
+    slewType: 'equatorial' | 'altaz';
+    pierSide?: 'East' | 'West';
 }) => {
   // Step 1: Set the target coordinates
   await fetchApi("/telescope/target", {
@@ -85,10 +88,16 @@ export const slewTelescope = async (coords: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(coords),
   });
-
+  
   // Step 2: Issue the slew command
   return fetchApi("/telescope/slew", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // The backend now requires the slew_type to be specified
+    body: JSON.stringify({ 
+      slew_type: slewOptions.slewType,
+      pier_side: slewOptions.pierSide,
+    }),
   });
 };
 
@@ -147,6 +156,15 @@ export const slewDome = (azimuth: number) =>
     body: JSON.stringify({ azimuth }),
   });
 
+export const stopDome = () =>
+  fetchApi("/dome/stop", {
+    method: "POST",
+  });
+
+export const homeDome = () =>
+  fetchApi("/dome/home", {
+    method: "POST",
+  });
 export const openShutter = () =>
   fetchApi("/shutter/open", {
     method: "POST",
@@ -277,6 +295,12 @@ export const getObservatoryState = async (
             : 'Unknown',
     };
 
+    const processedDome = dome ? {
+        azimuth: dome.azimuth,
+        isSlaved: dome.is_slaved,
+        isMoving: dome.is_moving,
+        shutterState: dome.shutter_status,
+    } : null;
     const processedMotors = {
         motorRaAz: motors?.motor_ra_az ?? null,
         motorDecAlt: motors?.motor_dec_alt ?? null,
@@ -299,4 +323,5 @@ export const getObservatoryState = async (
     const safeSystem = processedSystem || { cpuUsage: 0, memoryUsage: 0, diskUsage: 0, systemTemp: 0, uptime: "0" };
 
     return { telescope, dome, motors: processedMotors, system: safeSystem, weather, time };
+    return { telescope, dome: processedDome, motors: processedMotors, system: safeSystem, weather, time };
 };

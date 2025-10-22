@@ -280,12 +280,13 @@ export default function App() {
     az?: number;
     direction?: 'N' | 'S' | 'E' | 'W';
     duration_ms?: number;
+    slewType?: 'equatorial' | 'altaz';
     halt?: 'all' | 'N' | 'S' | 'E' | 'W';
   }) => {
-    if (coords.ra !== undefined || coords.alt !== undefined) {
+    if (coords.slewType) {
       console.log("Slewing telescope to:", coords);
       try {
-        await api.slewTelescope(coords);
+        await api.slewTelescope(coords, { slewType: coords.slewType });
       } catch (error) {
         console.error("Failed to slew telescope:", error);
       }

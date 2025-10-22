@@ -25,6 +25,7 @@ interface TelescopePointingControlProps {
     az?: number;
     direction?: 'N' | 'S' | 'E' | 'W';
     duration_ms?: number;
+    slewType?: 'equatorial' | 'altaz';
     halt?: 'all' | 'N' | 'S' | 'E' | 'W';
   }) => void;
   onToggleTracking: () => void;
@@ -67,9 +68,9 @@ export function TelescopePointingControl({
   const handleSlew = () => {
     setIsSlewing(true); // TEST THIS
     if (coordType === "equatorial" && targetRA && targetDec) {
-      onSetTarget({ ra: parseFloat(targetRA), dec: parseFloat(targetDec) });
+      onSetTarget({ ra: parseFloat(targetRA), dec: parseFloat(targetDec), slewType: 'equatorial' });
     } else if (coordType === "altaz" && targetAlt && targetAz) {
-      onSetTarget({ alt: parseFloat(targetAlt), az: parseFloat(targetAz) });
+      onSetTarget({ alt: parseFloat(targetAlt), az: parseFloat(targetAz), slewType: 'altaz' });
     }
   };
 

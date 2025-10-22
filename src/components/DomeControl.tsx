@@ -2,17 +2,35 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button"; 
 import { Home, RotateCw, Building2, Link, Link2Off } from "lucide-react";
+import { Button } from "./ui/button";
+import { Home, RotateCw, Building2, Link, Link2Off, Target, XSquare } from "lucide-react";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { useState } from "react";
 
 interface DomeControlProps {
   azimuth: number;
   shutterState: "open" | "closed" | "opening" | "closing" | "unknown";
   isSlaved: boolean;
+  isMoving: boolean;
   onToggleSlaving: () => void;
+  onSlewDome: (azimuth: number) => Promise<any>;
+  onStopDome: () => Promise<any>;
 }
 
 export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }: DomeControlProps) {
+export function DomeControl({
+  azimuth,
+  shutterState,
+  isSlaved,
+  isMoving,
+  onToggleSlaving,
+  onSlewDome,
+  onStopDome,
+}: DomeControlProps) {
+  const [targetAzimuth, setTargetAzimuth] = useState("");
+
   const getShutterBadgeVariant = () => {
     switch (shutterState) {
       case "open": return "default";
@@ -23,6 +41,17 @@ export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }
     }
   };
   
+
+  const handleSlew = async () => {
+    const target = parseFloat(targetAzimuth);
+    if (!isNaN(target)) {
+      try {
+        await onSlewDome(target);
+      } catch (error) {
+        console.error("Failed to slew dome:", error);
+      }
+    }
+  };
   return (
     <Card className="p-4 md:p-6 glass">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -36,9 +65,19 @@ export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }
             Slave to Scope
           </Label>
           <Switch id="dome-slave" checked={isSlaved} onCheckedChange={() => onToggleSlaving()} />
+        <div className="flex items-center gap-4">
+          {isMoving && <Badge variant="default" className="bg-blue-500 animate-pulse">Slewing</Badge>}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="dome-slave" className="flex items-center gap-2 cursor-pointer">
+              {isSlaved ? <Link className="w-4 h-4" /> : <Link2Off className="w-4 h-4" />}
+              Slave to Scope
+            </Label>
+            <Switch id="dome-slave" checked={isSlaved} onCheckedChange={onToggleSlaving} />
+          </div>
         </div>
       </div>
       
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Dome Azimuth Visualizer */}
         <div className="flex flex-col items-center">
@@ -87,6 +126,7 @@ export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }
                     strokeWidth="8" 
                     strokeLinecap="round"
                     opacity="0.8"
+                    className={isMoving ? "animate-pulse" : ""}
                   />
                   <circle cx={x2} cy={y2} r="6" fill="#fbbf24" />
                 </>
@@ -114,6 +154,7 @@ export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }
             </div>
           </div>
           
+
           <div className="grid grid-cols-2 gap-3">
             <Button variant="outline" className="w-full" disabled={shutterState === "opening" || shutterState === "open"}>
               Open Shutter
@@ -123,9 +164,28 @@ export function DomeControl({ azimuth, shutterState, isSlaved, onToggleSlaving }
             </Button>
           </div>
           
+
           <div className="pt-4 border-t border-border">
             <div className="opacity-70 mb-3">Dome Control</div>
             <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="dome-azimuth-target" className="flex-shrink-0">Target Azimuth</Label>
+                <Input
+                  id="dome-azimuth-target"
+                  type="number"
+                  placeholder="e.g. 180.0"
+                  value={targetAzimuth}
+                  onChange={(e) => setTargetAzimuth(e.target.value)}
+                  className="glass"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button onClick={handleSlew} disabled={isMoving || !targetAzimuth}><Target className="w-4 h-4 mr-2" />Slew</Button>
+                <Button variant="destructive" onClick={onStopDome} disabled={!isMoving}><XSquare className="w-4 h-4 mr-2" />Stop</Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3">
               <Button variant="outline" size="sm">
                 <Home className="w-4 h-4 mr-2" />
                 Home
