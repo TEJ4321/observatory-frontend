@@ -29,6 +29,7 @@ interface TelescopePointingControlProps {
     halt?: 'all' | 'N' | 'S' | 'E' | 'W';
   }) => void;
   onToggleTracking: () => void;
+  onStopTelescope: () => void;
   onFlipPierSide: () => void;
 }
 
@@ -43,6 +44,7 @@ export function TelescopePointingControl({
   status,
   onSetTarget,
   onToggleTracking, 
+  onStopTelescope,
   onFlipPierSide
 }: TelescopePointingControlProps) {
   const [coordType, setCoordType] = useState<"equatorial" | "altaz">("equatorial");
@@ -51,7 +53,7 @@ export function TelescopePointingControl({
   const [targetAlt, setTargetAlt] = useState("");
   const [targetAz, setTargetAz] = useState("");
   const [nudgeDuration, setNudgeDuration] = useState(500);
-  const [isSlewing, setIsSlewing] = useState(false); // TEST THIS
+  const [manualMoveMode, setManualMoveMode] = useState<'nudge' | 'move'>('nudge');
 
   // Convert coordinates for visualization
   const centerX = 150;
@@ -65,8 +67,9 @@ export function TelescopePointingControl({
   const telescopeX = centerX + altRadius * Math.cos(azRad);
   const telescopeY = centerY + altRadius * Math.sin(azRad);
 
+  const isSlewing = status.toLowerCase().includes("slewing");
+
   const handleSlew = () => {
-    setIsSlewing(true); // TEST THIS
     if (coordType === "equatorial" && targetRA && targetDec) {
       onSetTarget({ ra: parseFloat(targetRA), dec: parseFloat(targetDec), slewType: 'equatorial' });
     } else if (coordType === "altaz" && targetAlt && targetAz) {
@@ -121,14 +124,14 @@ export function TelescopePointingControl({
     if (lowerStatus.includes("slewing")) {
       return <Badge variant="default" className="bg-blue-500">Slewing</Badge>;
     }
+    if (lowerStatus.includes("stopped") || lowerStatus.includes("idle")) {
+      return <Badge variant="secondary">Idle</Badge>;
+    }
     if (lowerStatus.includes("tracking")) {
       return <Badge variant="default" className="bg-green-500">Tracking</Badge>;
     }
     if (lowerStatus.includes("parked")) {
       return <Badge variant="destructive">Parked</Badge>;
-    }
-    if (lowerStatus.includes("stopped") || lowerStatus.includes("idle")) {
-      return <Badge variant="secondary">Idle</Badge>;
     }
     return <Badge variant="outline">{status}</Badge>;
   };
@@ -340,7 +343,6 @@ export function TelescopePointingControl({
           </Tabs>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-            {/* TEST THIS */}
             <Button onClick={handleSlew} className="w-full" disabled={!mountReady || isSlewing}>
               <Target className="w-4 h-4 mr-2" />
               Slew
@@ -355,88 +357,156 @@ export function TelescopePointingControl({
             </Button>
           </div>
 
+          <div className="h-4" />
           <Separator className="my-6" />
+
+
+
+
+
 
           {/* Manual Movement */}
           <div>
-            <h4 className="opacity-70 mb-3 flex items-center gap-2"><Move className="w-4 h-4" />Manual Movement</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Nudge Controls */}
-              <div className="space-y-3">
-                <Label>Nudge Telescope</Label>
-                <div className="grid grid-cols-3 grid-rows-3 gap-1 w-36 mx-auto glass p-2 rounded-lg">
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-2 row-start-1" onClick={() => handleNudge('N')}>
-                    <ArrowUp />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-1 row-start-2" onClick={() => handleNudge('E')}>
-                    <ArrowLeft />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-3 row-start-2" onClick={() => handleNudge('E')}>
-                    <ArrowRight />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-2 row-start-3" onClick={() => handleNudge('S')}>
-                    <ArrowDown />
+            {/* Title */}
+            <h4 className="opacity-70 mb-3 flex items-center gap-2">
+              <Move className="w-4 h-4" />
+              Manual Movement
+            </h4>
+            <div className="flex flex-col items-center space-y-4">
+
+
+              {/* Mode Title */}
+              <h3 className="text-lg font-semibold">
+                {manualMoveMode === 'nudge' ? 'Nudge Mode' : 'Toggle Mode'}
+              </h3>
+
+
+              <div className="inline-flex flex-col items-center space-y-2 glass p-3 rounded-lg">
+                {/* Top row (Up) */}
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline" size="icon"
+                    className="w-30 h-30 aspect-square p-2 bg-background/20"
+                    onClick={manualMoveMode === 'nudge' ? () => handleNudge('N') : undefined}
+                    onPointerDown={manualMoveMode === 'move' ? () => handleMoveStart('N') : undefined}
+                    onPointerUp={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                    onPointerLeave={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                  >
+                    <ArrowUp className="w-10 h-10" />
                   </Button>
                 </div>
-                <div className="flex items-center justify-center gap-2 pt-2">
-                  <Label htmlFor="nudge-duration" className="text-sm opacity-80">Duration (ms)</Label>
-                  <Input
-                    id="nudge-duration"
-                    type="number"
-                    step="100"
-                    value={nudgeDuration}
-                    onChange={(e) => setNudgeDuration(parseInt(e.target.value, 10))}
-                    className="glass w-24"
-                  />
+
+                {/* Middle row (Left – Center – Right) */}
+                <div className="flex items-center space-x-2">
+                  {/* Left */}
+                  <Button
+                    variant="outline" size="icon"
+                    className="w-14 h-14 aspect-square p-2 bg-background/20"
+                    onClick={manualMoveMode === 'nudge' ? () => handleNudge('W') : undefined}
+                    onPointerDown={manualMoveMode === 'move' ? () => handleMoveStart('W') : undefined}
+                    onPointerUp={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                    onPointerLeave={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                  >
+                    <ArrowLeft className="w-6 h-6" />
+                  </Button>
+
+                  {/* Center Control */}
+                  <div className="flex flex-col items-center justify-center w-28">
+                    <Button
+                      variant="ghost"
+                      className="w-16 h-14 flex flex-col items-center justify-center text-xs capitalize"
+                      onClick={() => setManualMoveMode(prev => prev === 'nudge' ? 'move' : 'nudge')}
+                    >
+                      Swap Mode
+                      <Repeat className="w-3 h-3 mt-1 opacity-70" />
+                    </Button>
+                    <div className="h-12 flex flex-col items-center justify-center text-center">
+                      {manualMoveMode === 'nudge' ? (
+                        <>
+                          <p className="text-xs opacity-60">Duration (ms)</p>
+                          <Input
+                            id="nudge-duration" type="number" step="100" value={nudgeDuration} 
+                            onChange={(e) => setNudgeDuration(parseInt(e.target.value, 10))}
+                            className="glass text-center p-2 text-xs"
+                            placeholder="Duration (ms)"
+                          />
+                        </>
+                      ) : (
+                        <p className="text-xs opacity-60">Click arrow to move continuously</p>
+                      )}
+                    </div>
+                  </div>
+
+                
+                  {/* Right */}
+                  <Button
+                    variant="outline" size="icon"
+                    className="w-14 h-14 aspect-square p-2 bg-background/20"
+                    onClick={manualMoveMode === 'nudge' ? () => handleNudge('E') : undefined}
+                    onPointerDown={manualMoveMode === 'move' ? () => handleMoveStart('E') : undefined}
+                    onPointerUp={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                    onPointerLeave={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                  >
+                    <ArrowRight className="w-6 h-6" />
+                  </Button>
                 </div>
+
+                {/* Bottom row (Down) */}
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline" size="icon"
+                    className="w-14 h-14 aspect-square p-2 bg-background/20"
+                    onClick={manualMoveMode === 'nudge' ? () => handleNudge('S') : undefined}
+                    onPointerDown={manualMoveMode === 'move' ? () => handleMoveStart('S') : undefined}
+                    onPointerUp={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                    onPointerLeave={manualMoveMode === 'move' ? handleMoveEnd : undefined}
+                  >
+                    <ArrowDown className="w-6 h-6" />
+                  </Button>
+                </div>
+              </div>
+                
+              
+              <div className="w-full max-w-xs">
+                <Button variant="destructive" onClick={onStopTelescope} className="w-full">
+                  <XSquare className="w-4 h-4 mr-3" />
+                  STOP ALL MOVEMENT
+                </Button>
               </div>
 
-              {/* Move Controls */}
-              <div className="space-y-3">
-                <Label>Move Telescope (Hold)</Label>
-                <div className="grid grid-cols-3 grid-rows-3 gap-1 w-36 mx-auto glass p-2 rounded-lg">
-                   <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-2 row-start-1" onPointerDown={() => handleMoveStart('N')} onPointerUp={handleMoveEnd} onPointerLeave={handleMoveEnd}>
-                    <ArrowUp />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-1 row-start-2" onPointerDown={() => handleMoveStart('E')} onPointerUp={handleMoveEnd} onPointerLeave={handleMoveEnd}>
-                    <ArrowLeft />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-3 row-start-2" onPointerDown={() => handleMoveStart('W')} onPointerUp={handleMoveEnd} onPointerLeave={handleMoveEnd}>
-                    <ArrowRight />
-                  </Button>
-                  <Button variant="outline" size="icon" className="w-full h-full aspect-square col-start-2 row-start-3" onPointerDown={() => handleMoveStart('S')} onPointerUp={handleMoveEnd} onPointerLeave={handleMoveEnd}>
-                    <ArrowDown />
-                  </Button>
+
+              {/* Directional Halt Movement */}
+              {/* <div className="mt-4">
+                <h4 className="opacity-70 mb-3 flex items-center gap-2"><XSquare className="w-4 h-4" />Halt Movement</h4>
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="inline-flex flex-col items-center space-y-2 glass p-3 rounded-lg">
+
+                    <div className="flex justify-center">
+                      <Button variant="outline" size="icon" className="w-14 h-14" onClick={() => handleHaltDirection('N')}>N</Button>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="icon" className="w-14 h-14" onClick={() => handleHaltDirection('W')}>W</Button>
+                      <Button variant="outline" className="w-16 h-16" onClick={handleMoveEnd}>
+                        Halt All
+                      </Button>
+                      <Button variant="outline" size="icon" className="w-14 h-14" onClick={() => handleHaltDirection('E')}>E</Button>
+                    </div>
+
+                    <div className="flex justify-center">
+                      <Button variant="outline" size="icon" className="w-14 h-14" onClick={() => handleHaltDirection('S')}>S</Button>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs opacity-60 text-center pt-2">Press and hold to move</p>
-              </div>
+              </div> */}
+
+
             </div>
           </div>
-
-          <Separator className="my-6" />
-
-          {/* Halt Controls */}
-          <div>
-            <h4 className="opacity-70 mb-3 flex items-center gap-2"><XSquare className="w-4 h-4" />Halt Movement</h4>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="destructive" onClick={handleMoveEnd} className="flex-grow">
-                <XSquare className="w-4 h-4 mr-2" />
-                STOP ALL MOVEMENT
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" className="glass" onClick={() => handleHaltDirection('N')}>Stop N</Button>
-                <Button variant="outline" className="glass" onClick={() => handleHaltDirection('S')}>Stop S</Button>
-                <Button variant="outline" className="glass" onClick={() => handleHaltDirection('E')}>Stop E</Button>
-                <Button variant="outline" className="glass" onClick={() => handleHaltDirection('W')}>Stop W</Button>
-              </div>
-            </div>
-          </div>
-
-
-
-
-
-
+          
+          {/* Add a gap here between the separator and the previous section */} 
+          <div className="h-4" />
+          <Separator className="my-6" /> 
 
         </div>
       </div>

@@ -115,17 +115,13 @@ export const parkTelescope = () => fetchApi("/telescope/park", { method: "POST" 
 export const unparkTelescope = () => fetchApi("/telescope/unpark", { method: "POST" });
 
 export const nudgeTelescope = (direction: 'N' | 'S' | 'E' | 'W', duration_ms: number) =>
-  fetchApi("/telescope/nudge", {
+  fetchApi(`/telescope/nudge?direction=${direction}&duration_ms=${duration_ms}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ direction, duration_ms }),
   });
 
 export const moveTelescope = (direction: 'N' | 'S' | 'E' | 'W') =>
-  fetchApi("/telescope/move", {
+  fetchApi(`/telescope/move?direction=${direction}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ direction }),
   });
 
 export const haltTelescope = (direction?: 'N' | 'S' | 'E' | 'W') =>
@@ -136,11 +132,18 @@ export const haltTelescope = (direction?: 'N' | 'S' | 'E' | 'W') =>
     body: JSON.stringify({ direction: direction || "" }),
   });
 
+export const stopTelescope = () =>
+  fetchApi("/telescope/stop", {
+    method: "POST",
+  });
+
 
 
 // --- Dome & Shutter Control ---
 
 export const getDomeStatus = () => fetchApi("/dome/status");
+
+export const getDomeSyncStatus = () => fetchApi("/dome/sync/status");
 
 export const setDomeSlave = (slave: boolean) =>
   fetchApi("/dome/slave", {
@@ -153,18 +156,9 @@ export const slewDome = (azimuth: number) =>
   fetchApi("/dome/slew", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ azimuth }),
+    body: JSON.stringify({ az: azimuth }),
   });
 
-export const stopDome = () =>
-  fetchApi("/dome/stop", {
-    method: "POST",
-  });
-
-export const homeDome = () =>
-  fetchApi("/dome/home", {
-    method: "POST",
-  });
 export const openShutter = () =>
   fetchApi("/shutter/open", {
     method: "POST",
@@ -172,6 +166,11 @@ export const openShutter = () =>
 
 export const closeShutter = () =>
   fetchApi("/shutter/close", {
+    method: "POST",
+  });
+
+export const stopDome = () =>
+  fetchApi("/dome/stop", {
     method: "POST",
   });
 
@@ -254,12 +253,13 @@ export const getObservatoryState = async (
     const results = await Promise.allSettled([
         getTelescopeStatus(),
         getDomeStatus(),
+        getDomeSyncStatus(),
         getTemperatures(),
         getSystemStatus(),
         getTime(),
     ]);
-
-    const [mountStatusRes, domeRes, motorsRes, systemRes, timeRes] = results;
+    
+    const [mountStatusRes, domeStatusRes, domeSyncRes, motorsRes, systemRes, timeRes] = results;
 
     // Helper to extract value or return null if promise was rejected
     const getValue = <T>(result: PromiseSettledResult<T>, endpointName: string): T | null => {
@@ -271,7 +271,8 @@ export const getObservatoryState = async (
     };
 
     const mountStatus = getValue(mountStatusRes, 'mount_status');
-    const dome = getValue(domeRes, 'dome_status');
+    const domeStatus = getValue(domeStatusRes, 'dome_status');
+    const domeSync = getValue(domeSyncRes, 'dome_sync_status');
     const motors = getValue(motorsRes, 'temperatures');
     const system = getValue(systemRes, 'system_status');
     const time = getValue(timeRes, 'time');
@@ -295,12 +296,6 @@ export const getObservatoryState = async (
             : 'Unknown',
     };
 
-    const processedDome = dome ? {
-        azimuth: dome.azimuth,
-        isSlaved: dome.is_slaved,
-        isMoving: dome.is_moving,
-        shutterState: dome.shutter_status,
-    } : null;
     const processedMotors = {
         motorRaAz: motors?.motor_ra_az ?? null,
         motorDecAlt: motors?.motor_dec_alt ?? null,
@@ -322,6 +317,12 @@ export const getObservatoryState = async (
 
     const safeSystem = processedSystem || { cpuUsage: 0, memoryUsage: 0, diskUsage: 0, systemTemp: 0, uptime: "0" };
 
-    return { telescope, dome, motors: processedMotors, system: safeSystem, weather, time };
+    const processedDome = domeStatus ? {
+        azimuth: domeStatus.az ?? 0,
+        isMoving: domeStatus.moving ?? false,
+        isSlaved: domeSync?.dome_sync ?? false,
+        shutterState: "unknown", // This is hardcoded for now as shutter status is separate
+    } : null;
+
     return { telescope, dome: processedDome, motors: processedMotors, system: safeSystem, weather, time };
 };

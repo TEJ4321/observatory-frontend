@@ -69,6 +69,7 @@ interface ObservatoryState {
     azimuth: number;
     shutterState: "open" | "closed" | "opening" | "closing" | "unknown";
     isSlaved: boolean;
+    isMoving: boolean;
   };
   cameras: {
     telescopeCameraUrl: string;
@@ -142,6 +143,7 @@ const initialData: ObservatoryState = {
     azimuth: 0,
     shutterState: "unknown",
     isSlaved: false,
+    isMoving: false,
   },
   cameras: {
     telescopeCameraUrl: "",
@@ -308,6 +310,15 @@ export default function App() {
     }
   };
 
+  const handleStopTelescope = async () => {
+    console.log("EMERGENCY STOP: Stopping all telescope movement");
+    try {
+      await api.stopTelescope();
+    } catch (error) {
+      console.error("Failed to stop telescope:", error);
+    }
+  };
+
   const handleToggleTracking = async () => {
     const newTrackingState = !data.telescope.isTracking;
     console.log(`Setting tracking to: ${newTrackingState}`);
@@ -345,6 +356,19 @@ export default function App() {
     }
   };
 
+  const handleSlewDome = async (azimuth: number) => {
+    // Normalize azimuth to be within the 0-360 range required by the API.
+    // e.g., -30 becomes 330.
+    const normalizedAz = (azimuth % 360 + 360) % 360;
+
+    console.log(`Slewing dome to: ${normalizedAz} (original: ${azimuth})`);
+    try {
+      await api.slewDome(normalizedAz);
+    } catch (error) {
+      console.error("Failed to slew dome:", error);
+    }
+  };
+
 
   const fetchAllData = useCallback(async () => {
     const now = Date.now();
@@ -366,9 +390,7 @@ export default function App() {
           : prev.telescope,
         dome: dome
           ? {
-              ...prev.dome,
               ...dome,
-              shutterState: dome.shutter_status ?? prev.dome.shutterState,
             }
           : prev.dome,
         motors: motors
@@ -511,6 +533,7 @@ export default function App() {
             status={data.telescope.status}
             onSetTarget={handleSetTarget}
             onToggleTracking={handleToggleTracking}
+            onStopTelescope={handleStopTelescope}
             onFlipPierSide={handleFlipPierSide}
           />
 
@@ -540,7 +563,7 @@ export default function App() {
             </div>
           )}
 
-          <DomeControl {...data.dome} onToggleSlaving={handleToggleDomeSlaving} />
+          <DomeControl {...data.dome} onToggleSlaving={handleToggleDomeSlaving} onSlew={handleSlewDome} />
           <Temperatures {...data.motors} />
           <CameraFeeds {...data.cameras} />
         </div>

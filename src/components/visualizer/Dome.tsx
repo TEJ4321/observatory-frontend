@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Sphere } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { Sphere, useHelper } from "@react-three/drei";
 import * as THREE from "three";
 
 interface DomeProps {
@@ -13,22 +13,26 @@ export const Dome = ({ radius, azimuth, shutterState }: DomeProps) => {
   const groupRef = useRef<THREE.Group>(null!);
   const shutterRef = useRef<THREE.Mesh>(null!);
 
-  const domeAzRad = useMemo(() => THREE.MathUtils.degToRad(azimuth), [azimuth]);
-
-  // Define two parallel clipping planes for the fixed-width slit
-  const slitWidth = 0.5; // 50cm fixed width
+  // Convert dome azimuth to radians for three.js.
+  // We add 180 degrees (PI radians) because an azimuth of 0 (North) should
+  // point along the -Z axis in our scene, but a rotation of 0 in three.js points along +Z.
+  const domeAzRad = useMemo(() => -THREE.MathUtils.degToRad(azimuth), [azimuth]);
+  
+  // Define two parallel clipping planes for the fixed-width slit and one for the zenith
   const clipPlanes = useMemo(
-    () => [
-      new THREE.Plane(new THREE.Vector3(1, 0, 0), -slitWidth / 2),
-      new THREE.Plane(new THREE.Vector3(-1, 0, 0), -slitWidth / 2),
-      new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), // This plane cuts the slit at the zenith
-    ],
-    [slitWidth]
+    () => {
+      const slitWidth = 0.5; // 50cm fixed width
+      return [
+        new THREE.Plane(new THREE.Vector3(1, 0, 0), -slitWidth / 2),
+        new THREE.Plane(new THREE.Vector3(-1, 0, 0), -slitWidth / 2),
+        new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), // Cuts at the zenith
+      ];
+    }, []
   );
 
   // Define angles for the solid base and the slitted upper part
   const horizonAngle = Math.PI / 2; // 90 degrees
-  const slitStartAngleFromHorizon = THREE.MathUtils.degToRad(20);
+  const slitStartAngleFromHorizon = THREE.MathUtils.degToRad(10);
   const slitStartPhi = horizonAngle - slitStartAngleFromHorizon; // Angle from zenith where slit begins
 
   // Animate dome rotation and shutter position
@@ -42,7 +46,13 @@ export const Dome = ({ radius, azimuth, shutterState }: DomeProps) => {
       );
     }
 
-    
+    // Rotate the clipping planes to follow the dome's azimuth.
+    // Clipping planes are in world space, so we need to transform them manually.
+    if (groupRef.current) {
+      clipPlanes[0].normal.set(1, 0, 0).applyQuaternion(groupRef.current.quaternion);
+      clipPlanes[1].normal.set(-1, 0, 0).applyQuaternion(groupRef.current.quaternion);
+      clipPlanes[2].normal.set(0, 0, 1).applyQuaternion(groupRef.current.quaternion);
+    }
 
     if (shutterRef.current) {
       let targetAngle;

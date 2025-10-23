@@ -596,14 +596,9 @@ export const Mount = ({
     // Determine pier side flip angle
     const pierAngle = pierSide === "East" ? Math.PI : 0;
 
-
-    if (pierSide === "East")
+    if (pierSide === "West")
     {
-      decRad = 2 * THREE.MathUtils.degToRad(latitude) - THREE.MathUtils.degToRad(dec);
-    }
-    else
-    {
-      decRad = -2 * THREE.MathUtils.degToRad(latitude) + THREE.MathUtils.degToRad(dec);
+      decRad = -decRad;
     }
 
     if (raGroupRef.current) {

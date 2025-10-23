@@ -214,7 +214,7 @@ export function MountVisualizer3D({
         </div>
       </div>
 
-      <div className="relative w-full h-[450px] sm:h-[550px] border border-border rounded-lg glass cursor-grab active:cursor-grabbing touch-none">
+      <div className="relative w-full h-[500px] sm:h-[550px] border border-border rounded-lg glass cursor-grab active:cursor-grabbing touch-none">
         <Canvas
           camera={{
             position: [domeRadius * 2, domeRadius * 1.5, domeRadius * 2],
@@ -361,28 +361,9 @@ export function MountVisualizer3D({
           </Suspense>
         </Canvas>
 
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm opacity-80">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#df681a]" />
-            <span className="text-sm">Telescope</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#5e5e5e]" />
-            <span className="text-sm">Mount</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#b4b4b4]" />
-            <span className="text-sm">Counterweight</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-[#7d578d]" />
-            <span className="text-sm">Dome Slit</span>
-          </div>
-        </div>
-
         <div className="mt-3 p-3 bg-muted/40 rounded-lg text-center">
           <p className="opacity-70 text-sm">
-            Drag to rotate • Scroll to zoom • Mount offset from dome center
+            Left-Click Drag to rotate • Right-Click Drag to move • Scroll to zoom
           </p>
         </div>
       </div>
