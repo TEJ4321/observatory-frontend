@@ -146,7 +146,7 @@ export const getDomeStatus = () => fetchApi("/dome/status");
 export const getDomeSyncStatus = () => fetchApi("/dome/sync/status");
 
 export const setDomeSlave = (slave: boolean) =>
-  fetchApi("/dome/slave", {
+  fetchApi("/dome/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ slave }),
